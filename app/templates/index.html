@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Inicio | ServiTech{% endblock %}{% block page_title %}Panel principal{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Bienvenido al sistema de gestión del taller</p>{% endblock %}
+{% block content %}
+<div class="row g-4 mb-4 dashboard-stats">
+{% set tarjetas = [
+('Recibidos', estados.recibidos, 'bi-envelope', 'red', 'Total de órdenes recibidas', 'Recibido'),
+('Diagnosticados', estados.diagnosticados, 'bi-stethoscope', 'yellow', 'Con diagnóstico', 'Diagnosticado'),
+('En reparación', estados.reparacion, 'bi-tools', 'blue', 'Trabajos en proceso', 'En reparación'),
+('Listos', estados.listos, 'bi-check-circle', 'green', 'Listos para entregar', 'Listo para entrega')
+] %}
+{% for etiqueta, valor, icono, tono, detalle, estado_tarjeta in tarjetas %}
+<div class="col-sm-6 col-xl-3"><a class="stat-card {{ tono }}" href="/?estado={{ estado_tarjeta|urlencode }}"><div class="stat-icon"><i class="bi {{ icono }}"></i></div><div><strong>{{ etiqueta }}</strong><span class="stat-number">{{ valor }}</span><small>{{ detalle }}</small></div><i class="bi bi-chevron-right stat-arrow"></i></a></div>
+{% endfor %}
+</div>
+<div class="card panel-card search-panel mb-4"><div class="card-body p-4"><h2 class="section-title"><i class="bi bi-search"></i> Buscador rápido</h2><div class="search-box"><input id="buscadorGlobal" class="form-control" placeholder="Buscar por orden, cliente, DNI, teléfono, marca o serie..."><button class="search-button" type="button"><i class="bi bi-search"></i></button></div><div id="resultadosBusqueda" class="search-results mt-3"></div></div></div>
+<div class="card panel-card orders-panel"><div class="card-body p-4"><div class="panel-heading"><h2 class="section-title"><i class="bi bi-file-earmark-text"></i> Últimas órdenes</h2><a class="btn btn-sm btn-outline-primary" href="/ordenes">Ver todas <i class="bi bi-arrow-right"></i></a></div><div class="table-responsive"><table class="table dashboard-table align-middle"><thead><tr><th>Orden</th><th>Cliente</th><th>Equipo</th><th>Estado</th><th>Diagnóstico</th><th>Fecha</th></tr></thead><tbody>
+{% for orden in ultimas_ordenes %}<tr><td><a href="/ordenes?ticket={{ orden.id }}">{{ orden.numero_orden }}</a></td><td>{{ orden.equipo.cliente.nombres }} {{ orden.equipo.cliente.apellidos }}</td><td>{{ orden.equipo.tipo }} {{ orden.equipo.marca }}</td><td><span class="order-status">{{ orden.estado }}</span></td><td>{% if orden.diagnostico %}<details class="diagnosis-popover"><summary><i class="bi bi-eye"></i> Ver diagnóstico</summary><div><strong>Especificaciones</strong><span><b>Falla:</b> {{ orden.diagnostico.falla_encontrada }}</span><span><b>Solución:</b> {{ orden.diagnostico.solucion_recomendada }}</span><span><b>Repuestos:</b> {{ orden.diagnostico.repuestos_necesarios or "Ninguno" }}</span><span><b>Costo:</b> S/ {{ "%.2f"|format(orden.diagnostico.costo_estimado) }}</span></div></details>{% else %}<span class="text-secondary">Pendiente</span>{% endif %}</td><td>{{ orden.fecha_ingreso.strftime("%d/%m/%Y") }}</td></tr>{% else %}<tr><td colspan="6"><div class="empty-state"><i class="bi bi-clipboard-x"></i><strong>Todavía no hay órdenes registradas.</strong><span>Cuando crees tu primera orden, aparecerá aquí.</span></div></td></tr>{% endfor %}
+</tbody></table></div></div></div>
+
+{% if estado_seleccionado %}
+<div class="status-modal" role="dialog" aria-modal="true"><a class="status-modal-backdrop" href="/"></a><div class="status-modal-panel"><div class="status-modal-header"><div><span class="eyebrow">GESTIÓN RÁPIDA</span><h2>{{ estado_seleccionado }}</h2></div><a href="/" class="ticket-close">×</a></div><div class="status-order-list">
+{% for orden in ordenes_estado %}<div class="status-order"><div><strong>{{ orden.numero_orden }}</strong><span>{{ orden.equipo.cliente.nombres }} {{ orden.equipo.cliente.apellidos }}</span><small>{{ orden.equipo.tipo }} {{ orden.equipo.marca }} {{ orden.equipo.modelo }}</small></div><div>
+{% if estado_seleccionado == 'Recibido' %}<a class="btn btn-sm btn-outline-primary" href="/diagnosticos">Realizar diagnóstico</a>
+{% elif estado_seleccionado == 'Diagnosticado' %}<form method="post" action="/ordenes/{{ orden.id }}/estado-rapido"><input type="hidden" name="nuevo_estado" value="En reparación"><button class="btn btn-sm btn-primary" onclick="return confirm('¿Confirmas que el equipo pasa a reparación?')">Iniciar reparación</button></form>
+{% elif estado_seleccionado == 'En reparación' %}<form method="post" action="/ordenes/{{ orden.id }}/estado-rapido"><input type="hidden" name="nuevo_estado" value="Listo para entrega"><button class="btn btn-sm btn-success" onclick="return confirm('¿Confirmas que el equipo está listo para entregar?')">Marcar como listo</button></form>
+{% elif estado_seleccionado == 'Listo para entrega' %}<form method="post" action="/ordenes/{{ orden.id }}/estado-rapido"><input type="hidden" name="nuevo_estado" value="Entregado"><button class="btn btn-sm btn-dark" onclick="return confirm('¿Confirmas que el equipo ya fue entregado al cliente?')">Confirmar entrega</button></form>{% endif %}
+</div></div>{% else %}<div class="empty-state"><i class="bi bi-check-circle"></i><strong>No hay equipos en este estado.</strong></div>{% endfor %}
+</div></div></div>
+{% endif %}
+{% endblock %}
