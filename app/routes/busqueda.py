@@ -1,3 +1,5 @@
+from datetime import timedelta, timezone
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
@@ -9,6 +11,13 @@ from app.models.equipo import Equipo
 from app.models.orden import OrdenServicio
 
 router = APIRouter(prefix="/api", tags=["Búsqueda"])
+HORA_PERU = timezone(timedelta(hours=-5))
+
+
+def formatear_fecha_peru(fecha):
+    if fecha.tzinfo is None:
+        fecha = fecha.replace(tzinfo=timezone.utc)
+    return fecha.astimezone(HORA_PERU).strftime("%d/%m/%Y %I:%M %p")
 
 
 @router.get("/buscar")
@@ -49,6 +58,24 @@ def buscar(q: str = Query(min_length=2, max_length=100), db: Session = Depends(o
             "cliente": f"{orden.equipo.cliente.nombres} {orden.equipo.cliente.apellidos}",
             "equipo": f"{orden.equipo.tipo} {orden.equipo.marca}",
             "estado": orden.estado,
+            "fecha": formatear_fecha_peru(orden.fecha_ingreso),
+            "datos_cliente": {
+                "nombres": f"{orden.equipo.cliente.nombres} {orden.equipo.cliente.apellidos}",
+                "documento": orden.equipo.cliente.dni_ruc,
+                "telefono": orden.equipo.cliente.telefono,
+            },
+            "datos_equipo": {
+                "tipo": orden.equipo.tipo,
+                "marca": orden.equipo.marca or "No indicada",
+                "modelo": orden.equipo.modelo or "No indicado",
+                "serie": orden.equipo.numero_serie or "Sin serie",
+                "accesorios": orden.equipo.accesorios or "Ninguno",
+                "observaciones": orden.equipo.observaciones or "Sin observaciones",
+            },
+            "datos_orden": {
+                "falla_reportada": orden.falla_reportada,
+                "tecnico": orden.tecnico_responsable or "Sin asignar",
+            },
             "especificaciones": (
                 {
                     "falla_encontrada": orden.diagnostico.falla_encontrada,
