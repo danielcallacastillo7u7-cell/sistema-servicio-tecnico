@@ -68,6 +68,13 @@ def inicio(
         "reparacion": conteos.get("En reparación", 0),
         "listos": conteos.get("Listo para entrega", 0),
     }
+    total_ordenes = db.query(func.count(OrdenServicio.id)).scalar() or 0
+    total_canceladas = (
+        db.query(func.count(OrdenServicio.id))
+        .filter(OrdenServicio.estado == "Cancelado")
+        .scalar()
+        or 0
+    )
     ultimas_ordenes = (
         db.query(OrdenServicio)
         .options(
@@ -79,23 +86,25 @@ def inicio(
         .all()
     )
     estados_panel_validos = {
+        "Todas",
         "Recibido",
         "Diagnosticado",
         "En reparación",
         "Listo para entrega",
+        "Cancelado",
     }
     ordenes_estado = []
     if estado in estados_panel_validos:
-        ordenes_estado = (
+        consulta_ordenes = (
             db.query(OrdenServicio)
             .options(
                 joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente),
                 joinedload(OrdenServicio.diagnostico),
             )
-            .filter(OrdenServicio.estado == estado)
-            .order_by(OrdenServicio.id.desc())
-            .all()
         )
+        if estado != "Todas":
+            consulta_ordenes = consulta_ordenes.filter(OrdenServicio.estado == estado)
+        ordenes_estado = consulta_ordenes.order_by(OrdenServicio.id.desc()).all()
     return templates.TemplateResponse(
         request=request,
         name="index.html",
@@ -103,8 +112,13 @@ def inicio(
             "titulo": "ServiTech",
             "seccion": "inicio",
             "estados": estados,
+            "total_ordenes": total_ordenes,
+            "total_canceladas": total_canceladas,
             "ultimas_ordenes": ultimas_ordenes,
             "estado_seleccionado": estado if estado in estados_panel_validos else None,
+            "estado_titulo": (
+                "Todas las órdenes" if estado == "Todas" else "Órdenes canceladas" if estado == "Cancelado" else estado
+            ),
             "ordenes_estado": ordenes_estado,
         },
     )

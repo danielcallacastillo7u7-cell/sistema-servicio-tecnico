@@ -3,6 +3,8 @@
 {% block page_subtitle %}<p class="page-subtitle">Bienvenido al sistema de gestión del taller</p>{% endblock %}
 {% block content %}
 <div class="row g-4 mb-4 dashboard-stats">
+<div class="col-sm-6 col-xl-3"><a class="stat-card purple" href="/?estado=Todas"><div class="stat-icon"><i class="bi bi-collection"></i></div><div><strong>Todas las órdenes</strong><span class="stat-number">{{ total_ordenes }}</span><small>Registro completo</small></div><i class="bi bi-chevron-right stat-arrow"></i></a></div>
+<div class="col-sm-6 col-xl-3"><a class="stat-card dark" href="/?estado=Cancelado"><div class="stat-icon"><i class="bi bi-x-circle"></i></div><div><strong>Canceladas</strong><span class="stat-number">{{ total_canceladas }}</span><small>Registro de cancelaciones</small></div><i class="bi bi-chevron-right stat-arrow"></i></a></div>
 {% set tarjetas = [
 ('Recibidos', estados.recibidos, 'bi-envelope', 'red', 'Total de órdenes recibidas', 'Recibido'),
 ('Diagnosticados', estados.diagnosticados, 'bi-stethoscope', 'yellow', 'Con diagnóstico', 'Diagnosticado'),
@@ -19,8 +21,8 @@
 </tbody></table></div></div></div>
 
 {% if estado_seleccionado %}
-<div class="status-modal" role="dialog" aria-modal="true"><a class="status-modal-backdrop" href="/"></a><div class="status-modal-panel"><div class="status-modal-header"><div><span class="eyebrow">GESTIÓN RÁPIDA</span><h2>{{ estado_seleccionado }}</h2></div><a href="/" class="ticket-close">×</a></div><div class="status-order-list">
-{% for orden in ordenes_estado %}<div class="status-order"><div><strong>{{ orden.numero_orden }}</strong><span>{{ orden.equipo.cliente.nombres }} {{ orden.equipo.cliente.apellidos }}</span><small>{{ orden.equipo.tipo }} {{ orden.equipo.marca }} {{ orden.equipo.modelo }}</small></div><div>
+<div class="status-modal" role="dialog" aria-modal="true"><a class="status-modal-backdrop" href="/"></a><div class="status-modal-panel"><div class="status-modal-header"><div><span class="eyebrow">REGISTRO DE ÓRDENES</span><h2>{{ estado_titulo }}</h2></div><a href="/" class="ticket-close">×</a></div><div class="status-order-list">
+{% for orden in ordenes_estado %}<div class="status-order"><div><strong>{{ orden.numero_orden }}</strong><span>{{ orden.equipo.cliente.nombres }} {{ orden.equipo.cliente.apellidos }}</span><small>{{ orden.equipo.tipo }} {{ orden.equipo.marca }} {{ orden.equipo.modelo }}</small><small>Fecha: {{ orden.fecha_ingreso.strftime("%d/%m/%Y") }} · Estado: {{ orden.estado }}</small></div><div>
 {% if estado_seleccionado == 'Recibido' %}<a class="btn btn-sm btn-outline-primary" href="/diagnosticos">Realizar diagnóstico</a>
 {% elif estado_seleccionado == 'Diagnosticado' %}<form method="post" action="/ordenes/{{ orden.id }}/estado-rapido"><input type="hidden" name="nuevo_estado" value="En reparación"><button class="btn btn-sm btn-primary" onclick="return confirm('¿Confirmas que el equipo pasa a reparación?')">Iniciar reparación</button></form>
 {% elif estado_seleccionado == 'En reparación' %}<form method="post" action="/ordenes/{{ orden.id }}/estado-rapido"><input type="hidden" name="nuevo_estado" value="Listo para entrega"><button class="btn btn-sm btn-success" onclick="return confirm('¿Confirmas que el equipo está listo para entregar?')">Marcar como listo</button></form>
