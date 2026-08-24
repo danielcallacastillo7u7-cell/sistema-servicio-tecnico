@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import hmac
 import os
@@ -42,6 +42,17 @@ MOTIVOS_CANCELACION = (
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 CLAVE_ELIMINACION = os.getenv("CLAVE_ELIMINACION", "SERVITECH2026")
+ZONA_HORARIA_PERU = timezone(timedelta(hours=-5), name="America/Lima")
+
+
+def fecha_hora_peru(fecha: datetime) -> datetime:
+    """Convierte fechas de la base de datos (UTC) a la hora oficial de Perú."""
+    if fecha.tzinfo is None:
+        fecha = fecha.replace(tzinfo=timezone.utc)
+    return fecha.astimezone(ZONA_HORARIA_PERU)
+
+
+templates.env.filters["fecha_peru"] = fecha_hora_peru
 
 
 def contexto_ordenes(
@@ -219,7 +230,7 @@ def registrar_orden(
     db.add(orden)
     db.flush()
 
-    anio = datetime.now().year
+    anio = datetime.now(ZONA_HORARIA_PERU).year
     orden.numero_orden = f"OT-{anio}-{orden.id:06d}"
     db.add(HistorialEstado(orden_id=orden.id, estado="Recibido"))
     db.commit()

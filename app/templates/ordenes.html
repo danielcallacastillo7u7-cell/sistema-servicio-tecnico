@@ -3,40 +3,195 @@
 {% block page_subtitle %}<p class="page-subtitle">Registra la recepción completa y genera el ticket</p>{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<div class="card panel-card mb-4"><div class="card-body p-4"><form method="post" action="/ordenes">
-<h2 class="section-title"><i class="bi bi-person"></i> Datos del cliente</h2><div class="row g-3">
-<div class="col-md-6"><label class="form-label">Nombres <span class="required">*</span></label><input name="nombres" class="form-control solo-letras" minlength="2" maxlength="100" required></div>
-<div class="col-md-6"><label class="form-label">Apellidos <span class="required">*</span></label><input name="apellidos" class="form-control solo-letras" minlength="2" maxlength="100" required></div>
-<div class="col-md-6"><label class="form-label">DNI o RUC <span class="required">*</span></label><input name="dni_ruc" class="form-control solo-numeros" inputmode="numeric" minlength="8" maxlength="11" pattern="(?:[0-9]{8}|[0-9]{11})" required><small class="form-text">DNI: 8 dígitos · RUC: 11 dígitos.</small></div>
-<div class="col-md-6"><label class="form-label">Celular <span class="required">*</span></label><input name="telefono" class="form-control solo-numeros" inputmode="numeric" minlength="9" maxlength="9" pattern="9[0-9]{8}" placeholder="9XXXXXXXX" required></div>
-</div><hr class="my-4"><h2 class="section-title"><i class="bi bi-pc-display"></i> Datos del equipo</h2><div class="row g-3">
-<div class="col-md-6"><label class="form-label">Tipo <span class="required">*</span></label><select id="tipoEquipo" name="tipo" class="form-select" required><option value="">Selecciona una opción</option><option>Laptop</option><option>Impresora</option><option>CPU</option><option>Otro</option></select></div>
-<div id="tipoOtroGrupo" class="col-md-6 conditional-field" hidden><label class="form-label">Especificar otro equipo <span class="required">*</span></label><input id="tipoOtro" name="tipo_otro" class="form-control" maxlength="80"></div>
-<div class="col-md-6"><label class="form-label">Marca <small>(opcional)</small></label><input name="marca" class="form-control" maxlength="80"></div>
-<div class="col-md-6"><label class="form-label">Modelo <span class="required">*</span></label><input name="modelo" class="form-control" maxlength="100" required></div>
-<div class="col-md-6"><label class="form-label">Número de serie <small>(opcional)</small></label><input name="numero_serie" class="form-control" maxlength="100"></div>
-<div class="col-md-6"><label class="form-label">Accesorios <span class="required">*</span></label><select id="accesorioOpcion" name="accesorio_opcion" class="form-select" required><option value="">Selecciona una opción</option><option>Ninguno</option><option>Especificar</option></select></div>
-<div id="accesoriosDetalleGrupo" class="col-md-6 conditional-field" hidden><label class="form-label">Especificar accesorios <span class="required">*</span></label><textarea id="accesoriosDetalle" name="accesorios_detalle" class="form-control" maxlength="500"></textarea></div>
-<div class="col-md-6"><label class="form-label">Observaciones <small>(opcional)</small></label><textarea name="observaciones" class="form-control" maxlength="1000"></textarea></div>
-</div><hr class="my-4"><h2 class="section-title"><i class="bi bi-file-earmark-text"></i> Datos de la orden</h2><div class="row g-3">
-<div class="col-md-8"><label class="form-label">Falla indicada por el cliente <span class="required">*</span></label><textarea name="falla_reportada" class="form-control" rows="3" required></textarea></div><div class="col-md-4"><label class="form-label">Técnico responsable <span class="required">*</span></label><select name="tecnico_responsable" class="form-select" required><option value="">Selecciona un técnico</option>{% for trabajador in trabajadores %}<option value="{{ trabajador.nombre }}">{{ trabajador.nombre }}</option>{% endfor %}</select>{% if not trabajadores %}<small class="form-text text-danger">Primero agrega un trabajador en Ajustes.</small>{% endif %}</div>
-</div><button class="btn btn-primary mt-4" {% if not trabajadores %}disabled{% endif %}><i class="bi bi-ticket-perforated"></i> Guardar y generar ticket</button></form></div></div>
-<div class="card panel-card"><div class="card-body p-4"><h2 class="section-title">Órdenes registradas</h2><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Orden</th><th>Cliente / Equipo</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
-{% for orden in ordenes %}<tr><td class="fw-semibold">{{ orden.numero_orden }}<br><small class="text-secondary">{{ orden.fecha_ingreso.strftime("%d/%m/%Y") }}</small></td><td>{{ orden.equipo.cliente.nombres }} {{ orden.equipo.cliente.apellidos }}<br><small>{{ orden.equipo.tipo }} {{ orden.equipo.marca }}</small></td><td><span class="order-state state-{{ orden.estado|lower|replace(' ', '-')|replace('ó', 'o') }}">{{ orden.estado }}</span><small class="state-help">El estado avanza desde el panel principal.</small></td><td><div class="d-flex flex-column gap-2"><a class="btn btn-sm btn-outline-dark" href="/ordenes?ticket={{ orden.id }}">Ver ticket</a>{% if orden.estado not in ['Entregado', 'Cancelado'] %}<details class="cancel-box"><summary>Cancelar</summary><form method="post" action="/ordenes/{{ orden.id }}/cancelar"><select name="motivo" class="form-select form-select-sm mt-2" required><option value="">Selecciona el motivo</option>{% for motivo in motivos_cancelacion %}<option>{{ motivo }}</option>{% endfor %}</select><textarea name="detalle" class="form-control form-control-sm mt-2" placeholder="Detalle opcional"></textarea><button class="btn btn-sm btn-danger w-100 mt-2" onclick="return confirm('¿Confirmas que deseas cancelar esta orden?')">Confirmar cancelación</button></form></details>{% endif %}<details class="delete-box"><summary><i class="bi bi-trash"></i> Eliminar</summary><form method="post" action="/ordenes/{{ orden.id }}/eliminar"><label class="form-label mt-2">Clave de eliminación</label><div class="password-field"><input id="claveOrden{{ orden.id }}" name="clave" type="password" class="form-control form-control-sm" autocomplete="off" required><button type="button" class="password-toggle" data-target="claveOrden{{ orden.id }}" aria-label="Mostrar u ocultar clave"><i class="bi bi-eye"></i></button></div><button class="btn btn-sm btn-danger w-100 mt-2" onclick="return confirm('Esta acción eliminará permanentemente la orden y su historial. ¿Deseas continuar?')">Eliminar completamente</button></form></details></div></td></tr>
-{% else %}<tr><td colspan="4">Todavía no hay órdenes.</td></tr>{% endfor %}
-</tbody></table></div></div></div>
+<div class="card panel-card mb-4">
+    <div class="card-body p-4">
+        <form method="post" action="/ordenes">
+            <h2 class="section-title"><i class="bi bi-person"></i> Datos del cliente</h2>
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">Nombres <span class="required">*</span></label><input
+                        name="nombres" class="form-control solo-letras" minlength="2" maxlength="100" required></div>
+                <div class="col-md-6"><label class="form-label">Apellidos <span class="required">*</span></label><input
+                        name="apellidos" class="form-control solo-letras" minlength="2" maxlength="100" required></div>
+                <div class="col-md-6"><label class="form-label">DNI o RUC <span class="required">*</span></label><input
+                        name="dni_ruc" class="form-control solo-numeros" inputmode="numeric" minlength="8"
+                        maxlength="11" pattern="(?:[0-9]{8}|[0-9]{11})" required><small class="form-text">DNI: 8 dígitos
+                        · RUC: 11 dígitos.</small></div>
+                <div class="col-md-6"><label class="form-label">Celular <span class="required">*</span></label><input
+                        name="telefono" class="form-control solo-numeros" inputmode="numeric" minlength="9"
+                        maxlength="9" pattern="9[0-9]{8}" placeholder="9XXXXXXXX" required></div>
+            </div>
+            <hr class="my-4">
+            <h2 class="section-title"><i class="bi bi-pc-display"></i> Datos del equipo</h2>
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">Tipo <span class="required">*</span></label><select
+                        id="tipoEquipo" name="tipo" class="form-select" required>
+                        <option value="">Selecciona una opción</option>
+                        <option>Laptop</option>
+                        <option>Impresora</option>
+                        <option>CPU</option>
+                        <option>Otro</option>
+                    </select></div>
+                <div id="tipoOtroGrupo" class="col-md-6 conditional-field" hidden><label class="form-label">Especificar
+                        otro equipo <span class="required">*</span></label><input id="tipoOtro" name="tipo_otro"
+                        class="form-control" maxlength="80"></div>
+                <div class="col-md-6"><label class="form-label">Marca <small>(opcional)</small></label><input
+                        name="marca" class="form-control" maxlength="80"></div>
+                <div class="col-md-6"><label class="form-label">Modelo <span class="required">*</span></label><input
+                        name="modelo" class="form-control" maxlength="100" required></div>
+                <div class="col-md-6"><label class="form-label">Número de serie <small>(opcional)</small></label><input
+                        name="numero_serie" class="form-control" maxlength="100"></div>
+                <div class="col-md-6"><label class="form-label">Accesorios <span
+                            class="required">*</span></label><select id="accesorioOpcion" name="accesorio_opcion"
+                        class="form-select" required>
+                        <option value="">Selecciona una opción</option>
+                        <option>Ninguno</option>
+                        <option>Especificar</option>
+                    </select></div>
+                <div id="accesoriosDetalleGrupo" class="col-md-6 conditional-field" hidden><label
+                        class="form-label">Especificar accesorios <span class="required">*</span></label><textarea
+                        id="accesoriosDetalle" name="accesorios_detalle" class="form-control"
+                        maxlength="500"></textarea></div>
+                <div class="col-md-6"><label class="form-label">Observaciones <small>(opcional)</small></label><textarea
+                        name="observaciones" class="form-control" maxlength="1000"></textarea></div>
+            </div>
+            <hr class="my-4">
+            <h2 class="section-title"><i class="bi bi-file-earmark-text"></i> Datos de la orden</h2>
+            <div class="row g-3">
+                <div class="col-md-8"><label class="form-label">Falla indicada por el cliente <span
+                            class="required">*</span></label><textarea name="falla_reportada" class="form-control"
+                        rows="3" required></textarea></div>
+                <div class="col-md-4"><label class="form-label">Técnico responsable <span
+                            class="required">*</span></label><select name="tecnico_responsable" class="form-select"
+                        required>
+                        <option value="">Selecciona un técnico</option>{% for trabajador in trabajadores %}<option
+                            value="{{ trabajador.nombre }}">{{ trabajador.nombre }}</option>{% endfor %}
+                    </select>{% if not trabajadores %}<small class="form-text text-danger">Primero agrega un trabajador
+                        en Ajustes.</small>{% endif %}</div>
+            </div><button class="btn btn-primary mt-4" {% if not trabajadores %}disabled{% endif %}><i
+                    class="bi bi-ticket-perforated"></i> Guardar y generar ticket</button>
+        </form>
+    </div>
+</div>
+<div class="card panel-card">
+    <div class="card-body p-4">
+        <h2 class="section-title">Órdenes registradas</h2>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Orden</th>
+                        <th>Cliente / Equipo</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for orden in ordenes %}<tr>
+                        <td class="fw-semibold">{{ orden.numero_orden }}<br><small class="text-secondary">{{
+                                orden.fecha_ingreso.strftime("%d/%m/%Y") }}</small></td>
+                        <td>{{ orden.equipo.cliente.nombres }} {{ orden.equipo.cliente.apellidos }}<br><small>{{
+                                orden.equipo.tipo }} {{ orden.equipo.marca }}</small></td>
+                        <td><span
+                                class="order-state state-{{ orden.estado|lower|replace(' ', '-')|replace('ó', 'o') }}">{{
+                                orden.estado }}</span><small class="state-help">El estado avanza desde el panel
+                                principal.</small></td>
+                        <td>
+                            <div class="d-flex flex-column gap-2"><a class="btn btn-sm btn-outline-dark"
+                                    href="/ordenes?ticket={{ orden.id }}">Ver ticket</a>{% if orden.estado not in
+                                ['Entregado', 'Cancelado'] %}<details class="cancel-box">
+                                    <summary>Cancelar</summary>
+                                    <form method="post" action="/ordenes/{{ orden.id }}/cancelar"><select name="motivo"
+                                            class="form-select form-select-sm mt-2" required>
+                                            <option value="">Selecciona el motivo</option>{% for motivo in
+                                            motivos_cancelacion %}<option>{{ motivo }}</option>{% endfor %}
+                                        </select><textarea name="detalle" class="form-control form-control-sm mt-2"
+                                            placeholder="Detalle opcional"></textarea><button
+                                            class="btn btn-sm btn-danger w-100 mt-2"
+                                            onclick="return confirm('¿Confirmas que deseas cancelar esta orden?')">Confirmar
+                                            cancelación</button></form>
+                                </details>{% endif %}<details class="delete-box">
+                                    <summary><i class="bi bi-trash"></i> Eliminar</summary>
+                                    <form method="post" action="/ordenes/{{ orden.id }}/eliminar"><label
+                                            class="form-label mt-2">Clave de eliminación</label>
+                                        <div class="password-field"><input id="claveOrden{{ orden.id }}" name="clave"
+                                                type="password" class="form-control form-control-sm" autocomplete="off"
+                                                required><button type="button" class="password-toggle"
+                                                data-target="claveOrden{{ orden.id }}"
+                                                aria-label="Mostrar u ocultar clave"><i class="bi bi-eye"></i></button>
+                                        </div><button class="btn btn-sm btn-danger w-100 mt-2"
+                                            onclick="return confirm('Esta acción eliminará permanentemente la orden y su historial. ¿Deseas continuar?')">Eliminar
+                                            completamente</button>
+                                    </form>
+                                </details>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}<tr>
+                        <td colspan="4">Todavía no hay órdenes.</td>
+                    </tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 {% if ticket_orden %}
 <div id="ticketModal" class="ticket-modal" role="dialog" aria-modal="true" aria-labelledby="ticketTitle">
-<div class="ticket-modal-backdrop"></div><div class="ticket-modal-panel"><div class="ticket-modal-header"><div><strong id="ticketTitle">Orden creada correctamente</strong><small>Vista previa para impresora térmica de 80 mm</small></div><a class="ticket-close" href="/ordenes" aria-label="Cerrar">×</a></div>
-<div class="ticket-preview-wrap"><article id="ticketImprimible" class="thermal-ticket">
-<img class="ticket-logo" src="{{ url_for('static', path='/images/logo-ticket-servitech.png') }}" alt="Logo de ServiTech">
-<div class="ticket-divider"></div><h2>ORDEN DE RECEPCIÓN</h2><p class="ticket-order">{{ ticket_orden.numero_orden }}</p><p>{{ ticket_orden.fecha_ingreso.strftime("%d/%m/%Y %I:%M %p") }}</p><div class="ticket-divider"></div>
-<dl><dt>CLIENTE</dt><dd>{{ ticket_orden.equipo.cliente.nombres }} {{ ticket_orden.equipo.cliente.apellidos }}</dd><dt>DNI/RUC</dt><dd>{{ ticket_orden.equipo.cliente.dni_ruc }}</dd><dt>CELULAR</dt><dd>{{ ticket_orden.equipo.cliente.telefono }}</dd></dl><div class="ticket-divider"></div>
-<dl><dt>EQUIPO</dt><dd>{{ ticket_orden.equipo.tipo }}</dd><dt>MARCA / MODELO</dt><dd>{{ ticket_orden.equipo.marca }} / {{ ticket_orden.equipo.modelo }}</dd><dt>SERIE</dt><dd>{{ ticket_orden.equipo.numero_serie or "Sin serie" }}</dd><dt>ACCESORIOS</dt><dd>{{ ticket_orden.equipo.accesorios }}</dd></dl><div class="ticket-divider"></div>
-<dl><dt>FALLA REPORTADA</dt><dd>{{ ticket_orden.falla_reportada }}</dd><dt>TÉCNICO</dt><dd>{{ ticket_orden.tecnico_responsable }}</dd><dt>ESTADO</dt><dd>{{ ticket_orden.estado }}</dd></dl><div class="ticket-divider"></div>
-<p class="pickup-notice"><strong>AVISO DE RECOJO</strong><br>Plazo máximo de recojo: 21 días calendario desde la comunicación de finalización del servicio. Después de ese plazo se aplicará un costo de almacenamiento por cada día adicional, según la tarifa informada por ServiTech.</p>
-<p class="ticket-thanks">Gracias por confiar en ServiTech</p>
-</article></div><div class="ticket-modal-actions"><a class="btn btn-outline-dark" href="/ordenes">Cerrar</a><button class="btn btn-primary" type="button" onclick="imprimirTicket()"><i class="bi bi-printer"></i> Imprimir boleta</button></div></div></div>
+    <div class="ticket-modal-backdrop"></div>
+    <div class="ticket-modal-panel">
+        <div class="ticket-modal-header">
+            <div><strong id="ticketTitle">Orden creada correctamente</strong><small>Vista previa para impresora térmica
+                    de 80 mm</small></div><a class="ticket-close" href="/ordenes" aria-label="Cerrar">×</a>
+        </div>
+        <div class="ticket-preview-wrap">
+            <article id="ticketImprimible" class="thermal-ticket">
+                <img class="ticket-logo" src="{{ url_for('static', path='/images/logo-ticket-servitech.png') }}"
+                    alt="Logo de ServiTech">
+                <div class="ticket-divider"></div>
+                <h2>ORDEN DE RECEPCIÓN</h2>
+                <p class="ticket-order">{{ ticket_orden.numero_orden }}</p>
+                <p>{{ (ticket_orden.fecha_ingreso|fecha_peru).strftime("%d/%m/%Y %I:%M %p") }}</p>
+                <div class="ticket-divider"></div>
+                <dl>
+                    <dt>CLIENTE</dt>
+                    <dd>{{ ticket_orden.equipo.cliente.nombres }} {{ ticket_orden.equipo.cliente.apellidos }}</dd>
+                    <dt>DNI/RUC</dt>
+                    <dd>{{ ticket_orden.equipo.cliente.dni_ruc }}</dd>
+                    <dt>CELULAR</dt>
+                    <dd>{{ ticket_orden.equipo.cliente.telefono }}</dd>
+                </dl>
+                <div class="ticket-divider"></div>
+                <dl>
+                    <dt>EQUIPO</dt>
+                    <dd>{{ ticket_orden.equipo.tipo }}</dd>
+                    <dt>MARCA / MODELO</dt>
+                    <dd>{{ ticket_orden.equipo.marca }} / {{ ticket_orden.equipo.modelo }}</dd>
+                    <dt>SERIE</dt>
+                    <dd>{{ ticket_orden.equipo.numero_serie or "Sin serie" }}</dd>
+                    <dt>ACCESORIOS</dt>
+                    <dd>{{ ticket_orden.equipo.accesorios }}</dd>
+                </dl>
+                <div class="ticket-divider"></div>
+                <dl>
+                    <dt>FALLA REPORTADA</dt>
+                    <dd>{{ ticket_orden.falla_reportada }}</dd>
+                    <dt>TÉCNICO</dt>
+                    <dd>{{ ticket_orden.tecnico_responsable }}</dd>
+                    <dt>ESTADO</dt>
+                    <dd>{{ ticket_orden.estado }}</dd>
+                </dl>
+                <div class="ticket-divider"></div>
+                <p class="pickup-notice"><strong>AVISO DE RECOJO</strong><br>Una vez terminado y comunicado de la resparación de su equipo, el cliente tendrá
+                    hata 2 semanas para recojer su equipo, caso contrario, asumirá el costo del
+                    almacenaje en nustras instalaciones.
+                    En caso pase más de 3 Meses la omisión del recojo de su producto, entrará en 
+                    remate por gastos y almacenaje.</p>
+            </article>
+        </div>
+        <div class="ticket-modal-actions"><a class="btn btn-outline-dark" href="/ordenes">Cerrar</a><button
+                class="btn btn-primary" type="button" onclick="imprimirTicket()"><i class="bi bi-printer"></i> Imprimir
+                boleta</button></div>
+    </div>
+</div>
 {% endif %}
 {% endblock %}
