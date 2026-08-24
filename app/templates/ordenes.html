@@ -30,7 +30,7 @@
 <div id="ticketModal" class="ticket-modal" role="dialog" aria-modal="true" aria-labelledby="ticketTitle">
 <div class="ticket-modal-backdrop"></div><div class="ticket-modal-panel"><div class="ticket-modal-header"><div><strong id="ticketTitle">Orden creada correctamente</strong><small>Vista previa para impresora térmica de 80 mm</small></div><a class="ticket-close" href="/ordenes" aria-label="Cerrar">×</a></div>
 <div class="ticket-preview-wrap"><article id="ticketImprimible" class="thermal-ticket">
-<img class="ticket-logo" src="{{ url_for('static', path='/images/logo-servitech.png') }}" alt="ServiTech">
+<img class="ticket-logo" src="{{ url_for('static', path='/images/logo-ticket-servitech.png') }}" alt="Logo de ServiTech">
 <div class="ticket-divider"></div><h2>ORDEN DE RECEPCIÓN</h2><p class="ticket-order">{{ ticket_orden.numero_orden }}</p><p>{{ ticket_orden.fecha_ingreso.strftime("%d/%m/%Y %I:%M %p") }}</p><div class="ticket-divider"></div>
 <dl><dt>CLIENTE</dt><dd>{{ ticket_orden.equipo.cliente.nombres }} {{ ticket_orden.equipo.cliente.apellidos }}</dd><dt>DNI/RUC</dt><dd>{{ ticket_orden.equipo.cliente.dni_ruc }}</dd><dt>CELULAR</dt><dd>{{ ticket_orden.equipo.cliente.telefono }}</dd></dl><div class="ticket-divider"></div>
 <dl><dt>EQUIPO</dt><dd>{{ ticket_orden.equipo.tipo }}</dd><dt>MARCA / MODELO</dt><dd>{{ ticket_orden.equipo.marca }} / {{ ticket_orden.equipo.modelo }}</dd><dt>SERIE</dt><dd>{{ ticket_orden.equipo.numero_serie or "Sin serie" }}</dd><dt>ACCESORIOS</dt><dd>{{ ticket_orden.equipo.accesorios }}</dd></dl><div class="ticket-divider"></div>

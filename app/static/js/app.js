@@ -88,9 +88,24 @@ if (accesorioOpcion) {
 }
 
 function imprimirTicket() {
+    const ticket = document.getElementById("ticketImprimible");
+    if (!ticket) return;
+    const padreOriginal = ticket.parentNode;
+    const siguienteOriginal = ticket.nextSibling;
+    let restaurado = false;
+    const restaurarTicket = () => {
+        if (restaurado) return;
+        restaurado = true;
+        document.body.classList.remove("printing-ticket");
+        padreOriginal.insertBefore(ticket, siguienteOriginal);
+        window.removeEventListener("afterprint", restaurarTicket);
+    };
+
     document.body.classList.add("printing-ticket");
+    document.body.appendChild(ticket);
+    window.addEventListener("afterprint", restaurarTicket, { once: true });
     window.print();
-    setTimeout(() => document.body.classList.remove("printing-ticket"), 300);
+    setTimeout(restaurarTicket, 1000);
 }
 
 document.querySelectorAll(".password-toggle").forEach(boton => {
