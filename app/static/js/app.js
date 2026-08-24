@@ -141,3 +141,69 @@ document.querySelectorAll(".password-toggle").forEach(boton => {
         icono.className = mostrar ? "bi bi-eye-slash" : "bi bi-eye";
     });
 });
+
+const imagenesDiagnostico = document.querySelector("#imagenesDiagnostico");
+const vistaPreviaImagenes = document.querySelector("#vistaPreviaImagenes");
+const contadorImagenes = document.querySelector("#contadorImagenes");
+if (imagenesDiagnostico && vistaPreviaImagenes && contadorImagenes) {
+    let archivosSeleccionados = [];
+    let urlsTemporales = [];
+    const maximoImagenes = 5;
+    const maximoBytes = 4 * 1024 * 1024;
+    const tiposPermitidos = new Set(["image/jpeg", "image/png", "image/webp"]);
+    const identificadorArchivo = archivo => `${archivo.name}-${archivo.size}-${archivo.lastModified}`;
+
+    const sincronizarInput = () => {
+        const transferencia = new DataTransfer();
+        archivosSeleccionados.forEach(archivo => transferencia.items.add(archivo));
+        imagenesDiagnostico.files = transferencia.files;
+    };
+
+    const mostrarVistaPrevia = () => {
+        urlsTemporales.forEach(url => URL.revokeObjectURL(url));
+        urlsTemporales = [];
+        contadorImagenes.textContent = `${archivosSeleccionados.length} de ${maximoImagenes} imágenes`;
+        if (!archivosSeleccionados.length) {
+            vistaPreviaImagenes.innerHTML = "<p>Las imágenes seleccionadas aparecerán aquí.</p>";
+            return;
+        }
+        vistaPreviaImagenes.innerHTML = archivosSeleccionados.map((archivo, indice) => {
+            const url = URL.createObjectURL(archivo);
+            urlsTemporales.push(url);
+            return `<figure><img src="${url}" alt="Vista previa ${indice + 1}"><figcaption><span>${escaparHtml(archivo.name)}</span><button type="button" data-remove-image="${indice}" aria-label="Quitar ${escaparHtml(archivo.name)}">×</button></figcaption></figure>`;
+        }).join("");
+    };
+
+    imagenesDiagnostico.addEventListener("change", () => {
+        const existentes = new Set(archivosSeleccionados.map(identificadorArchivo));
+        for (const archivo of Array.from(imagenesDiagnostico.files)) {
+            if (archivosSeleccionados.length >= maximoImagenes) {
+                alert("Puedes seleccionar como máximo 5 imágenes.");
+                break;
+            }
+            if (!tiposPermitidos.has(archivo.type)) {
+                alert(`${archivo.name} no es una imagen JPG, PNG o WebP.`);
+                continue;
+            }
+            if (archivo.size > maximoBytes) {
+                alert(`${archivo.name} supera el máximo de 4 MB.`);
+                continue;
+            }
+            const identificador = identificadorArchivo(archivo);
+            if (!existentes.has(identificador)) {
+                archivosSeleccionados.push(archivo);
+                existentes.add(identificador);
+            }
+        }
+        sincronizarInput();
+        mostrarVistaPrevia();
+    });
+
+    vistaPreviaImagenes.addEventListener("click", evento => {
+        const boton = evento.target.closest("[data-remove-image]");
+        if (!boton) return;
+        archivosSeleccionados.splice(Number(boton.dataset.removeImage), 1);
+        sincronizarInput();
+        mostrarVistaPrevia();
+    });
+}
