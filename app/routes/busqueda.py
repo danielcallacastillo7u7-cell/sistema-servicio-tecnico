@@ -82,6 +82,13 @@ def buscar(q: str = Query(min_length=2, max_length=100), db: Session = Depends(o
                     "solucion": orden.diagnostico.solucion_recomendada,
                     "repuestos": orden.diagnostico.repuestos_necesarios or "Ninguno",
                     "costo": f"{orden.diagnostico.costo_estimado:.2f}",
+                    "imagenes": [
+                        {
+                            "url": f"/diagnosticos/imagenes/{imagen.id}",
+                            "nombre": imagen.nombre_archivo,
+                        }
+                        for imagen in orden.diagnostico.imagenes
+                    ],
                 }
                 if orden.diagnostico
                 else None

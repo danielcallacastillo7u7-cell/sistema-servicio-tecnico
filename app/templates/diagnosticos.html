@@ -5,12 +5,13 @@
 {% if ordenes_pendientes %}
 <div class="diagnosis-alert mb-4"><i class="bi bi-bell-fill"></i><div><strong>{{ ordenes_pendientes|length }} equipo{% if ordenes_pendientes|length != 1 %}s{% endif %} pendiente{% if ordenes_pendientes|length != 1 %}s{% endif %} de diagnóstico</strong><span>Los equipos recibidos aparecen aquí hasta completar su revisión técnica.</span></div></div>
 <div class="card panel-card mb-4"><div class="card-body p-4"><h2 class="section-title">Registrar diagnóstico</h2>
-<form method="post" action="/diagnosticos"><div class="row g-3">
+<form method="post" action="/diagnosticos" enctype="multipart/form-data"><div class="row g-3">
 <div class="col-12"><label class="form-label">Orden pendiente</label><select name="orden_id" class="form-select" required><option value="">Selecciona una orden</option>{% for orden in ordenes_pendientes %}<option value="{{ orden.id }}">{{ orden.numero_orden }} — {{ orden.equipo.cliente.nombres }} {{ orden.equipo.cliente.apellidos }} — {{ orden.equipo.tipo }} {{ orden.equipo.marca }}</option>{% endfor %}</select></div>
 <div class="col-md-6"><label class="form-label">Falla encontrada</label><textarea name="falla_encontrada" class="form-control" rows="3" required></textarea></div>
 <div class="col-md-6"><label class="form-label">Solución recomendada</label><textarea name="solucion_recomendada" class="form-control" rows="3" required></textarea></div>
 <div class="col-md-8"><label class="form-label">Repuestos necesarios</label><textarea name="repuestos_necesarios" class="form-control" rows="2"></textarea></div>
 <div class="col-md-4"><label class="form-label">Costo estimado (S/)</label><input name="costo_estimado" type="number" min="0" step="0.01" value="0.00" class="form-control" required></div>
+<div class="col-12"><label class="form-label">Imágenes de comprobación <small>(opcional)</small></label><input name="imagenes" type="file" class="form-control" accept="image/jpeg,image/png,image/webp" multiple><small class="form-text">Puedes adjuntar hasta 5 imágenes JPG, PNG o WebP. Máximo 4 MB por imagen.</small></div>
 </div><button class="btn btn-primary mt-3">Guardar diagnóstico</button></form></div></div>
 {% else %}<div class="alert alert-info">No hay órdenes pendientes de diagnóstico. Puedes crear una en <a href="/ordenes">Órdenes</a>.</div>{% endif %}
 <div class="card panel-card"><div class="card-body p-4"><h2 class="section-title">Diagnósticos realizados</h2><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Orden</th><th>Cliente</th><th>Falla encontrada</th><th>Costo</th><th>Fecha</th></tr></thead><tbody>

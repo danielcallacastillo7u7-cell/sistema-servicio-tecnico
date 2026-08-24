@@ -8,8 +8,11 @@ const escaparHtml = valor => String(valor ?? "").replace(/[&<>'"]/g, caracter =>
 })[caracter]);
 
 function abrirDetalleOrden(item) {
+    const evidencias = item.especificaciones?.imagenes?.length
+        ? `<div class="detail-evidence"><h4>Imágenes de comprobación</h4><div class="evidence-gallery">${item.especificaciones.imagenes.map((imagen, indice) => `<a href="${escaparHtml(imagen.url)}" target="_blank" rel="noopener" title="Abrir imagen ${indice + 1}"><img src="${escaparHtml(imagen.url)}" alt="Comprobante ${indice + 1}: ${escaparHtml(imagen.nombre)}" loading="lazy"></a>`).join("")}</div></div>`
+        : '<p class="detail-no-evidence">No se adjuntaron imágenes de comprobación.</p>';
     const diagnostico = item.especificaciones
-        ? `<div class="detail-list"><span><b>Falla encontrada:</b> ${escaparHtml(item.especificaciones.falla_encontrada)}</span><span><b>Solución:</b> ${escaparHtml(item.especificaciones.solucion)}</span><span><b>Repuestos:</b> ${escaparHtml(item.especificaciones.repuestos)}</span><span><b>Costo:</b> S/ ${escaparHtml(item.especificaciones.costo)}</span></div>`
+        ? `<div class="detail-list"><span><b>Falla encontrada:</b> ${escaparHtml(item.especificaciones.falla_encontrada)}</span><span><b>Solución:</b> ${escaparHtml(item.especificaciones.solucion)}</span><span><b>Repuestos:</b> ${escaparHtml(item.especificaciones.repuestos)}</span><span><b>Costo:</b> S/ ${escaparHtml(item.especificaciones.costo)}</span></div>${evidencias}`
         : '<p class="detail-pending">Pendiente de diagnóstico.</p>';
     const modal = document.createElement("div");
     modal.className = "order-detail-modal";
