@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="ServiTech")
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
-# Crea en Neon las tablas de los modelos importados.
+# Crea en PostgreSQL local las tablas de los modelos importados.
 Base.metadata.create_all(bind=engine)
 
 app.include_router(clientes_router)
