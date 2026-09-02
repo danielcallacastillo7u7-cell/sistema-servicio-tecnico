@@ -207,3 +207,75 @@ if (imagenesDiagnostico && vistaPreviaImagenes && contadorImagenes) {
         mostrarVistaPrevia();
     });
 }
+
+const modalEditarDiagnostico = document.querySelector("#editarDiagnosticoModal");
+const formularioEditarDiagnostico = document.querySelector("#editarDiagnosticoForm");
+if (modalEditarDiagnostico && formularioEditarDiagnostico) {
+    const titulo = document.querySelector("#editarDiagnosticoTitulo");
+    const campoId = document.querySelector("#editarDiagnosticoId");
+    const campoFalla = document.querySelector("#editarFalla");
+    const campoSolucion = document.querySelector("#editarSolucion");
+    const campoRepuestos = document.querySelector("#editarRepuestos");
+    const campoCosto = document.querySelector("#editarCosto");
+    const mensajeError = document.querySelector("#editarDiagnosticoError");
+    const botonGuardar = document.querySelector("#guardarDiagnostico");
+
+    const mostrarError = mensaje => {
+        mensajeError.textContent = mensaje;
+        mensajeError.hidden = false;
+    };
+    const cerrar = () => {
+        modalEditarDiagnostico.hidden = true;
+        mensajeError.hidden = true;
+        formularioEditarDiagnostico.reset();
+    };
+    modalEditarDiagnostico.querySelectorAll("[data-close-diagnosis]").forEach(elemento => elemento.addEventListener("click", cerrar));
+
+    document.querySelectorAll("[data-edit-diagnosis]").forEach(boton => {
+        boton.addEventListener("click", async () => {
+            modalEditarDiagnostico.hidden = false;
+            titulo.textContent = "Cargando datos…";
+            mensajeError.hidden = true;
+            try {
+                const respuesta = await fetch(`/diagnosticos/api/${encodeURIComponent(boton.dataset.editDiagnosis)}`);
+                const datos = await respuesta.json();
+                if (!respuesta.ok) throw new Error(datos.detail || "No se pudo cargar el diagnóstico.");
+                campoId.value = datos.id;
+                titulo.textContent = `Orden ${datos.numero_orden}`;
+                campoFalla.value = datos.falla_encontrada;
+                campoSolucion.value = datos.solucion_recomendada;
+                campoRepuestos.value = datos.repuestos_necesarios;
+                campoCosto.value = datos.costo_estimado;
+                campoFalla.focus();
+            } catch (error) {
+                mostrarError(error.message);
+            }
+        });
+    });
+
+    formularioEditarDiagnostico.addEventListener("submit", async evento => {
+        evento.preventDefault();
+        mensajeError.hidden = true;
+        botonGuardar.disabled = true;
+        botonGuardar.textContent = "Guardando…";
+        try {
+            const respuesta = await fetch(`/diagnosticos/api/${encodeURIComponent(campoId.value)}`, {
+                method: "PUT",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    falla_encontrada: campoFalla.value,
+                    solucion_recomendada: campoSolucion.value,
+                    repuestos_necesarios: campoRepuestos.value,
+                    costo_estimado: campoCosto.value
+                })
+            });
+            const datos = await respuesta.json();
+            if (!respuesta.ok) throw new Error(datos.detail || "No se pudo actualizar el diagnóstico.");
+            window.location.reload();
+        } catch (error) {
+            mostrarError(error.message);
+            botonGuardar.disabled = false;
+            botonGuardar.textContent = "Guardar cambios";
+        }
+    });
+}

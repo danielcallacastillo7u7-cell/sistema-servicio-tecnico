@@ -147,6 +147,13 @@
             <article id="ticketImprimible" class="thermal-ticket">
                 <img class="ticket-logo" src="{{ url_for('static', path='/images/logo-ticket-servitech.png') }}"
                     alt="Logo de ServiTech">
+                <header class="ticket-business-header">
+                    <p class="ticket-legal-name">A &amp; O SERVICIOS INFORMÁTICOS SOCIEDAD<br>COMERCIAL DE RESPONSABILIDAD LIMITADA</p>
+                    <h2 class="ticket-brand-name">SERVITECH</h2>
+                    <p class="ticket-address">CAL. AREQUIPA NRO. 584 C.P. AREQUIPA 584<br>AREQUIPA - ISLAY - MOLLENDO</p>
+                    <p>Cel. 922048201 - 912314022</p>
+                    <p>R.U.C. N.º 20611128291</p>
+                </header>
                 <div class="ticket-divider"></div>
                 <h2>ORDEN DE RECEPCIÓN</h2>
                 <p class="ticket-order">{{ ticket_orden.numero_orden }}</p>

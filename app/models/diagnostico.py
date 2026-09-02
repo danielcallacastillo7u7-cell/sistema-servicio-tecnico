@@ -33,6 +33,12 @@ class Diagnostico(Base):
         cascade="all, delete-orphan",
         order_by="DiagnosticoImagen.id",
     )
+    mensaje_cliente = relationship(
+        "DiagnosticoMensaje",
+        back_populates="diagnostico",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
 
 class DiagnosticoImagen(Base):
@@ -51,3 +57,16 @@ class DiagnosticoImagen(Base):
     fecha_subida = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     diagnostico = relationship("Diagnostico", back_populates="imagenes")
+
+
+class DiagnosticoMensaje(Base):
+    __tablename__ = "diagnostico_mensajes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    diagnostico_id = Column(Integer, ForeignKey("diagnosticos.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    mensaje = Column(Text, nullable=False)
+    estado = Column(String(30), nullable=False, default="Pendiente", index=True)
+    fecha_creacion = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    diagnostico = relationship("Diagnostico", back_populates="mensaje_cliente")
