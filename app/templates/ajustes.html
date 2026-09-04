@@ -4,13 +4,91 @@
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 <div class="row g-4 mb-4">
-<div class="col-md-4"><div class="card panel-card h-100"><div class="card-body p-4"><h2 class="section-title"><i class="bi bi-building"></i> Empresa</h2><p class="text-secondary">Datos, dirección y teléfono del negocio.</p><span class="badge text-bg-secondary">Próximamente</span></div></div></div>
-<div class="col-md-4"><div class="card panel-card h-100"><div class="card-body p-4"><h2 class="section-title"><i class="bi bi-printer"></i> Impresión</h2><p class="text-secondary">Configuración del comprobante y etiquetadora.</p><span class="badge text-bg-secondary">Próximamente</span></div></div></div>
-<div class="col-md-4"><div class="card panel-card h-100"><div class="card-body p-4"><h2 class="section-title"><i class="bi bi-people"></i> Usuarios</h2><p class="text-secondary">Administradores, recepción y técnicos.</p><span class="badge text-bg-secondary">Próximamente</span></div></div></div>
+    <div class="col-md-4">
+        <div class="card panel-card h-100">
+            <div class="card-body p-4">
+                <h2 class="section-title"><i class="bi bi-building"></i> Empresa</h2>
+                <p class="text-secondary">Datos, dirección y teléfono del negocio.</p><span
+                    class="badge text-bg-secondary">Próximamente</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card panel-card h-100">
+            <div class="card-body p-4">
+                <h2 class="section-title"><i class="bi bi-printer"></i> Impresión</h2>
+                <p class="text-secondary">Configuración del comprobante y etiquetadora.</p><span
+                    class="badge text-bg-secondary">Próximamente</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card panel-card h-100">
+            <div class="card-body p-4">
+                <h2 class="section-title"><i class="bi bi-people"></i> Usuarios</h2>
+                <p class="text-secondary">Administradores, recepción y técnicos.</p><span
+                    class="badge text-bg-secondary">Próximamente</span>
+            </div>
+        </div>
+    </div>
 </div>
-<div class="card panel-card mb-4"><div class="card-body p-4"><h2 class="section-title"><i class="bi bi-person-badge"></i> Trabajadores</h2><p class="text-secondary">Registra aquí a los técnicos que podrán ser responsables de una orden.</p><form method="post" action="/ajustes/trabajadores" class="row g-3 align-items-end"><div class="col-md-8"><label class="form-label">Nombre completo del trabajador</label><input name="nombre" class="form-control solo-letras" minlength="2" maxlength="120" required></div><div class="col-md-4"><button class="btn btn-primary w-100"><i class="bi bi-person-plus"></i> Agregar trabajador</button></div></form>
-<div class="worker-list mt-4">{% for trabajador in trabajadores %}<div class="worker-chip"><span><i class="bi bi-person-check"></i> {{ trabajador.nombre }}</span><details class="worker-delete"><summary title="Eliminar trabajador"><i class="bi bi-trash"></i></summary><form method="post" action="/ajustes/trabajadores/{{ trabajador.id }}/eliminar"><label class="form-label mt-2">Clave de eliminación</label><div class="password-field"><input id="claveTrabajador{{ trabajador.id }}" name="clave" type="password" class="form-control form-control-sm" autocomplete="off" required><button type="button" class="password-toggle" data-target="claveTrabajador{{ trabajador.id }}" aria-label="Mostrar u ocultar clave"><i class="bi bi-eye"></i></button></div><button class="btn btn-sm btn-danger w-100 mt-2" onclick="return confirm('¿Eliminar completamente a este trabajador?')">Eliminar completamente</button></form></details></div>{% else %}<div class="alert alert-warning mb-0">Todavía no hay trabajadores. Agrega al menos uno antes de crear una orden.</div>{% endfor %}</div></div></div>
-<div class="card panel-card"><div class="card-body p-4"><h2 class="section-title"><i class="bi bi-archive"></i> Órdenes canceladas</h2><p class="text-secondary">Se conservan para no perder el historial del cliente y del equipo.</p><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Orden</th><th>Cliente</th><th>Motivo</th><th>Detalle</th><th>Fecha</th></tr></thead><tbody>
-{% for item in cancelaciones %}<tr><td><a href="/ordenes?ticket={{ item.orden.id }}">{{ item.orden.numero_orden }}</a></td><td>{{ item.orden.equipo.cliente.nombres }} {{ item.orden.equipo.cliente.apellidos }}</td><td>{{ item.motivo }}</td><td>{{ item.detalle or "—" }}</td><td>{{ item.fecha.strftime("%d/%m/%Y %H:%M") }}</td></tr>{% else %}<tr><td colspan="5">No hay órdenes canceladas.</td></tr>{% endfor %}
-</tbody></table></div></div></div>
+<div class="card panel-card mb-4">
+    <div class="card-body p-4">
+        <h2 class="section-title"><i class="bi bi-person-badge"></i> Trabajadores</h2>
+        <p class="text-secondary">Registra aquí a los técnicos que podrán ser responsables de una orden.</p>
+        <form method="post" action="/ajustes/trabajadores" class="row g-3 align-items-end">
+            <div class="col-md-8"><label class="form-label">Nombre completo del trabajador</label><input name="nombre"
+                    class="form-control solo-letras" minlength="2" maxlength="120" required></div>
+            <div class="col-md-4"><button class="btn btn-primary w-100"><i class="bi bi-person-plus"></i> Agregar
+                    trabajador</button></div>
+        </form>
+        <div class="worker-list mt-4">{% for trabajador in trabajadores %}<div class="worker-chip"><span><i
+                        class="bi bi-person-check"></i> {{ trabajador.nombre }}</span>
+                <details class="worker-delete">
+                    <summary title="Eliminar trabajador"><i class="bi bi-trash"></i></summary>
+                    <form method="post" action="/ajustes/trabajadores/{{ trabajador.id }}/eliminar"><label
+                            class="form-label mt-2">Clave de eliminación</label>
+                        <div class="password-field"><input id="claveTrabajador{{ trabajador.id }}" name="clave"
+                                type="password" class="form-control form-control-sm" autocomplete="off" required><button
+                                type="button" class="password-toggle" data-target="claveTrabajador{{ trabajador.id }}"
+                                aria-label="Mostrar u ocultar clave"><i class="bi bi-eye"></i></button></div><button
+                            class="btn btn-sm btn-danger w-100 mt-2"
+                            onclick="return confirm('¿Eliminar completamente a este trabajador?')">Eliminar
+                            completamente</button>
+                    </form>
+                </details>
+            </div>{% else %}<div class="alert alert-warning mb-0">Todavía no hay trabajadores. Agrega al menos uno antes
+                de crear una orden.</div>{% endfor %}</div>
+    </div>
+</div>
+<div class="card panel-card">
+    <div class="card-body p-4">
+        <h2 class="section-title"><i class="bi bi-archive"></i> Órdenes canceladas</h2>
+        <p class="text-secondary">Se conservan para no perder el historial del cliente y del equipo.</p>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Orden</th>
+                        <th>Cliente</th>
+                        <th>Motivo</th>
+                        <th>Detalle</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cancelaciones %}<tr>
+                        <td><a href="/ordenes?ticket={{ item.orden.id }}">{{ item.orden.numero_orden }}</a></td>
+                        <td>{{ item.orden.equipo.cliente.nombres }} {{ item.orden.equipo.cliente.apellidos }}</td>
+                        <td>{{ item.motivo }}</td>
+                        <td>{{ item.detalle or "—" }}</td>
+                        <td>{{ item.fecha.strftime("%d/%m/%Y %H:%M") }}</td>
+                    </tr>{% else %}<tr>
+                        <td colspan="5">No hay órdenes canceladas.</td>
+                    </tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}

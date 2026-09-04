@@ -2,14 +2,46 @@
 {% block title %}Clientes | ServiTech{% endblock %}{% block page_title %}Clientes{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<div class="card panel-card mb-4"><div class="card-body p-4"><h2 class="section-title">Registrar cliente</h2>
-<form method="post" action="/clientes"><div class="row g-3">
-<div class="col-md-6"><label class="form-label">Nombres</label><input name="nombres" class="form-control" required></div>
-<div class="col-md-6"><label class="form-label">Apellidos</label><input name="apellidos" class="form-control" required></div>
-<div class="col-md-6"><label class="form-label">DNI o RUC</label><input name="dni_ruc" class="form-control" required></div>
-<div class="col-md-6"><label class="form-label">Teléfono</label><input name="telefono" class="form-control" required></div>
-</div><button class="btn btn-primary mt-3">Guardar cliente</button></form></div></div>
-<div class="card panel-card"><div class="card-body p-4"><h2 class="section-title">Clientes registrados</h2><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Cliente</th><th>DNI/RUC</th><th>Teléfono</th></tr></thead><tbody>
-{% for cliente in clientes %}<tr><td>{{ cliente.nombres }} {{ cliente.apellidos }}</td><td>{{ cliente.dni_ruc }}</td><td>{{ cliente.telefono }}</td></tr>{% else %}<tr><td colspan="3">Todavía no hay clientes.</td></tr>{% endfor %}
-</tbody></table></div></div></div>
+<div class="card panel-card mb-4">
+    <div class="card-body p-4">
+        <h2 class="section-title">Registrar cliente</h2>
+        <form method="post" action="/clientes">
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">Nombres</label><input name="nombres"
+                        class="form-control" required></div>
+                <div class="col-md-6"><label class="form-label">Apellidos</label><input name="apellidos"
+                        class="form-control" required></div>
+                <div class="col-md-6"><label class="form-label">DNI o RUC</label><input name="dni_ruc"
+                        class="form-control" required></div>
+                <div class="col-md-6"><label class="form-label">Teléfono</label><input name="telefono"
+                        class="form-control" required></div>
+            </div><button class="btn btn-primary mt-3">Guardar cliente</button>
+        </form>
+    </div>
+</div>
+<div class="card panel-card">
+    <div class="card-body p-4">
+        <h2 class="section-title">Clientes registrados</h2>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>DNI/RUC</th>
+                        <th>Teléfono</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}<tr>
+                        <td>{{ cliente.nombres }} {{ cliente.apellidos }}</td>
+                        <td>{{ cliente.dni_ruc }}</td>
+                        <td>{{ cliente.telefono }}</td>
+                    </tr>{% else %}<tr>
+                        <td colspan="3">Todavía no hay clientes.</td>
+                    </tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}

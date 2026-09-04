@@ -1,25 +1,99 @@
 {% extends "base.html" %}
-{% block title %}Cliente y equipo | ServiTech{% endblock %}{% block page_title %}Recepción de cliente y equipo{% endblock %}
-{% block page_subtitle %}<p class="page-subtitle">Registra al propietario y el equipo en un solo formulario</p>{% endblock %}
+{% block title %}Cliente y equipo | ServiTech{% endblock %}{% block page_title %}Recepción de cliente y equipo{%
+endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Registra al propietario y el equipo en un solo formulario</p>{%
+endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<div class="card panel-card mb-4"><div class="card-body p-4"><h2 class="section-title"><i class="bi bi-person"></i> Datos del cliente</h2>
-<form method="post" action="/equipos"><div class="row g-3">
-<div class="col-md-6"><label class="form-label">Nombres <span class="required">*</span></label><input name="nombres" class="form-control solo-letras" minlength="2" maxlength="100" autocomplete="given-name" required><small class="form-text">Solo letras y espacios.</small></div>
-<div class="col-md-6"><label class="form-label">Apellidos <span class="required">*</span></label><input name="apellidos" class="form-control solo-letras" minlength="2" maxlength="100" autocomplete="family-name" required><small class="form-text">Solo letras y espacios.</small></div>
-<div class="col-md-6"><label class="form-label">DNI o RUC <span class="required">*</span></label><input name="dni_ruc" class="form-control solo-numeros" inputmode="numeric" minlength="8" maxlength="11" pattern="(?:[0-9]{8}|[0-9]{11})" required><small class="form-text">DNI: 8 dígitos · RUC: 11 dígitos.</small></div>
-<div class="col-md-6"><label class="form-label">Celular <span class="required">*</span></label><input name="telefono" class="form-control solo-numeros" inputmode="numeric" minlength="9" maxlength="9" pattern="9[0-9]{8}" placeholder="9XXXXXXXX" autocomplete="tel" required><small class="form-text">9 dígitos y debe comenzar con 9.</small></div>
-</div><hr class="my-4"><h2 class="section-title"><i class="bi bi-pc-display"></i> Datos del equipo</h2><div class="row g-3">
-<div class="col-md-6"><label class="form-label">Tipo <span class="required">*</span></label><select id="tipoEquipo" name="tipo" class="form-select" required><option value="">Selecciona una opción</option><option>Laptop</option><option>Impresora</option><option>CPU</option><option>Otro</option></select></div>
-<div id="tipoOtroGrupo" class="col-md-6 conditional-field" hidden><label class="form-label">Especificar otro equipo <span class="required">*</span></label><input id="tipoOtro" name="tipo_otro" class="form-control" maxlength="80"></div>
-<div class="col-md-6"><label class="form-label">Marca <small>(opcional)</small></label><input name="marca" class="form-control" maxlength="80"></div>
-<div class="col-md-6"><label class="form-label">Modelo <span class="required">*</span></label><input name="modelo" class="form-control" maxlength="100" required></div>
-<div class="col-md-6"><label class="form-label">Número de serie <small>(opcional)</small></label><input name="numero_serie" class="form-control" maxlength="100"><small class="form-text">Usa el número del fabricante. El sistema genera automáticamente el código de orden.</small></div>
-<div class="col-md-6"><label class="form-label">Accesorios <span class="required">*</span></label><select id="accesorioOpcion" name="accesorio_opcion" class="form-select" required><option value="">Selecciona una opción</option><option>Ninguno</option><option>Especificar</option></select></div>
-<div id="accesoriosDetalleGrupo" class="col-md-6 conditional-field" hidden><label class="form-label">Especificar accesorios <span class="required">*</span></label><textarea id="accesoriosDetalle" name="accesorios_detalle" class="form-control" maxlength="500" placeholder="Ej.: cargador, cable de poder, mochila..."></textarea></div>
-<div class="col-md-6"><label class="form-label">Observaciones <small>(opcional)</small></label><textarea name="observaciones" class="form-control" maxlength="1000"></textarea></div>
-</div><button class="btn btn-primary mt-3">Guardar cliente y equipo</button></form></div></div>
-<div class="card panel-card"><div class="card-body p-4"><h2 class="section-title">Clientes y equipos registrados</h2><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Cliente</th><th>DNI/RUC</th><th>Teléfono</th><th>Equipo</th><th>Modelo</th><th>Serie</th></tr></thead><tbody>
-{% for equipo in equipos %}<tr><td>{{ equipo.cliente.nombres }} {{ equipo.cliente.apellidos }}</td><td>{{ equipo.cliente.dni_ruc }}</td><td>{{ equipo.cliente.telefono }}</td><td>{{ equipo.tipo }} {{ equipo.marca }}</td><td>{{ equipo.modelo or "—" }}</td><td>{{ equipo.numero_serie or "—" }}</td></tr>{% else %}<tr><td colspan="6">Todavía no hay clientes ni equipos.</td></tr>{% endfor %}
-</tbody></table></div></div></div>
+<div class="card panel-card mb-4">
+    <div class="card-body p-4">
+        <h2 class="section-title"><i class="bi bi-person"></i> Datos del cliente</h2>
+        <form method="post" action="/equipos">
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">Nombres <span class="required">*</span></label><input
+                        name="nombres" class="form-control solo-letras" minlength="2" maxlength="100"
+                        autocomplete="given-name" required><small class="form-text">Solo letras y espacios.</small>
+                </div>
+                <div class="col-md-6"><label class="form-label">Apellidos <span class="required">*</span></label><input
+                        name="apellidos" class="form-control solo-letras" minlength="2" maxlength="100"
+                        autocomplete="family-name" required><small class="form-text">Solo letras y espacios.</small>
+                </div>
+                <div class="col-md-6"><label class="form-label">DNI o RUC <span class="required">*</span></label><input
+                        name="dni_ruc" class="form-control solo-numeros" inputmode="numeric" minlength="8"
+                        maxlength="11" pattern="(?:[0-9]{8}|[0-9]{11})" required><small class="form-text">DNI: 8 dígitos
+                        · RUC: 11 dígitos.</small></div>
+                <div class="col-md-6"><label class="form-label">Celular <span class="required">*</span></label><input
+                        name="telefono" class="form-control solo-numeros" inputmode="numeric" minlength="9"
+                        maxlength="9" pattern="9[0-9]{8}" placeholder="9XXXXXXXX" autocomplete="tel" required><small
+                        class="form-text">9 dígitos y debe comenzar con 9.</small></div>
+            </div>
+            <hr class="my-4">
+            <h2 class="section-title"><i class="bi bi-pc-display"></i> Datos del equipo</h2>
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">Tipo <span class="required">*</span></label><select
+                        id="tipoEquipo" name="tipo" class="form-select" required>
+                        <option value="">Selecciona una opción</option>
+                        <option>Laptop</option>
+                        <option>Impresora</option>
+                        <option>CPU</option>
+                        <option>Otro</option>
+                    </select></div>
+                <div id="tipoOtroGrupo" class="col-md-6 conditional-field" hidden><label class="form-label">Especificar
+                        otro equipo <span class="required">*</span></label><input id="tipoOtro" name="tipo_otro"
+                        class="form-control" maxlength="80"></div>
+                <div class="col-md-6"><label class="form-label">Marca <small>(opcional)</small></label><input
+                        name="marca" class="form-control" maxlength="80"></div>
+                <div class="col-md-6"><label class="form-label">Modelo <span class="required">*</span></label><input
+                        name="modelo" class="form-control" maxlength="100" required></div>
+                <div class="col-md-6"><label class="form-label">Número de serie <small>(opcional)</small></label><input
+                        name="numero_serie" class="form-control" maxlength="100"><small class="form-text">Usa el número
+                        del fabricante. El sistema genera automáticamente el código de orden.</small></div>
+                <div class="col-md-6"><label class="form-label">Accesorios <span
+                            class="required">*</span></label><select id="accesorioOpcion" name="accesorio_opcion"
+                        class="form-select" required>
+                        <option value="">Selecciona una opción</option>
+                        <option>Ninguno</option>
+                        <option>Especificar</option>
+                    </select></div>
+                <div id="accesoriosDetalleGrupo" class="col-md-6 conditional-field" hidden><label
+                        class="form-label">Especificar accesorios <span class="required">*</span></label><textarea
+                        id="accesoriosDetalle" name="accesorios_detalle" class="form-control" maxlength="500"
+                        placeholder="Ej.: cargador, cable de poder, mochila..."></textarea></div>
+                <div class="col-md-6"><label class="form-label">Observaciones <small>(opcional)</small></label><textarea
+                        name="observaciones" class="form-control" maxlength="1000"></textarea></div>
+            </div><button class="btn btn-primary mt-3">Guardar cliente y equipo</button>
+        </form>
+    </div>
+</div>
+<div class="card panel-card">
+    <div class="card-body p-4">
+        <h2 class="section-title">Clientes y equipos registrados</h2>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>DNI/RUC</th>
+                        <th>Teléfono</th>
+                        <th>Equipo</th>
+                        <th>Modelo</th>
+                        <th>Serie</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for equipo in equipos %}<tr>
+                        <td>{{ equipo.cliente.nombres }} {{ equipo.cliente.apellidos }}</td>
+                        <td>{{ equipo.cliente.dni_ruc }}</td>
+                        <td>{{ equipo.cliente.telefono }}</td>
+                        <td>{{ equipo.tipo }} {{ equipo.marca }}</td>
+                        <td>{{ equipo.modelo or "—" }}</td>
+                        <td>{{ equipo.numero_serie or "—" }}</td>
+                    </tr>{% else %}<tr>
+                        <td colspan="6">Todavía no hay clientes ni equipos.</td>
+                    </tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}

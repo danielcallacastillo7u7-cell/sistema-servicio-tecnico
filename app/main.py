@@ -12,6 +12,7 @@ from app.models.cliente import Cliente
 from app.models.cancelacion import CancelacionOrden
 from app.models.diagnostico import Diagnostico
 from app.models.equipo import Equipo
+from app.models.exportacion import HistorialExportacion
 from app.models.historial import HistorialEstado
 from app.models.orden import OrdenServicio
 from app.models.trabajador import Trabajador
@@ -21,6 +22,7 @@ from app.routes.ajustes import router as ajustes_router
 from app.routes.diagnosticos import router as diagnosticos_router
 from app.routes.equipos import router as equipos_router
 from app.routes.ordenes import router as ordenes_router
+from app.routes.exportaciones import router as exportaciones_router
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -36,6 +38,7 @@ app.include_router(busqueda_router)
 app.include_router(diagnosticos_router)
 app.include_router(equipos_router)
 app.include_router(ordenes_router)
+app.include_router(exportaciones_router)
 
 app.mount(
     "/static",
