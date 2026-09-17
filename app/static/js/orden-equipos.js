@@ -1,6 +1,10 @@
-(() => {
+(function iniciarOrdenes(eventoInicial) {
+    if (document.readyState === 'loading' && eventoInicial?.type !== 'DOMContentLoaded') {
+        document.addEventListener('DOMContentLoaded', iniciarOrdenes, { once: true });
+        return;
+    }
     const formulario = document.getElementById('ordenForm');
-    if (!formulario) return;
+    if (!formulario || formulario.dataset.equiposInicializados === 'true') return;
     const contenedor = document.getElementById('equiposContenedor');
     const agregar = document.getElementById('agregarEquipo');
     const tecnico = document.getElementById('tecnicoResponsable');
@@ -42,7 +46,17 @@
         document.getElementById('cantidadEquipos').textContent = `${bloques().length} equipos · ${guardados} registrados · ${bloques().length - guardados} pendientes`;
     }
 
-    function crear(datos = {}) {
+    function tokenSolicitud() {
+        if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+        // HTTP por IP local: getRandomValues funciona sin contexto seguro.
+        const bytes = crypto.getRandomValues(new Uint8Array(16));
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    }
+
+    function crear(datos = {}, reemplazar = false) {
         const bloque = plantilla.cloneNode(true);
         const id = ++siguienteId;
         bloque.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
@@ -51,9 +65,11 @@
             campo.value = typeof datos[campo.name] === 'string' ? datos[campo.name] : '';
             campo.parentElement.querySelector('label')?.setAttribute('for', campo.id);
         });
-        estados.set(bloque, { token: crypto.randomUUID(), guardado: false, incierto: false, envio: null });
+        estados.set(bloque, { token: tokenSolicitud(), guardado: false, incierto: false, envio: null });
         condiciones(bloque);
-        contenedor.appendChild(bloque);
+        // Reemplaza el HTML inicial solo cuando el nuevo bloque está listo.
+        if (reemplazar) contenedor.replaceChildren(bloque);
+        else contenedor.appendChild(bloque);
         actualizar();
         return bloque;
     }
@@ -187,20 +203,33 @@
         }
     }
 
-    const previo = JSON.parse(document.getElementById('formularioPrevio').textContent);
+    // Solo se recuperan datos devueltos por el servidor tras una validación.
+    // No se lee localStorage ni sessionStorage para construir el formulario.
+    let previo = {};
+    try {
+        const datos = JSON.parse(document.getElementById('formularioPrevio')?.textContent || '{}');
+        if (datos && typeof datos === 'object' && !Array.isArray(datos)) previo = datos;
+    } catch (_) { /* Iniciar con un equipo vacío si los datos no son válidos. */ }
+    formulario.reset();
+    delete formulario.dataset.clienteRegistrado;
+    delete formulario.dataset.consultandoCliente;
     clientes.forEach(c => { c.value = typeof previo[c.name] === 'string' ? previo[c.name] : ''; });
     tecnico.value = typeof previo.tecnico_responsable === 'string' ? previo.tecnico_responsable : '';
     let equipos = [previo];
     if (previo.equipos_json) {
         try {
             const datos = JSON.parse(previo.equipos_json);
-            if (Array.isArray(datos) && datos.length && datos.every(e => e && typeof e === 'object')) {
+            if (Array.isArray(datos) && datos.length && datos.every(e => e && typeof e === 'object' && !Array.isArray(e))) {
                 equipos = datos.map(e => ({ ...e, falla_reportada: previo.falla_reportada || '', tecnico_responsable: previo.tecnico_responsable || '' }));
             }
         } catch (_) { /* La página ya muestra el error del envío anterior. */ }
     }
-    contenedor.replaceChildren();
-    equipos.forEach(crear);
+    equipos.forEach((datos, indice) => crear(datos, indice === 0));
+    formulario.dataset.equiposInicializados = 'true';
+    // Volver desde la caché de navegación debe obtener una vista nueva.
+    window.addEventListener('pageshow', evento => {
+        if (evento.persisted) window.location.replace('/ordenes');
+    });
     agregar.addEventListener('click', () => crear().querySelector('select').focus());
     contenedor.addEventListener('change', evento => condiciones(evento.target.closest('.equipo-bloque')));
     contenedor.addEventListener('click', evento => {

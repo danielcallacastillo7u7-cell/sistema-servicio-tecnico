@@ -8,14 +8,23 @@ const plantilla = fs.readFileSync(path.join(raiz, 'app/templates/ordenes.html'),
     .replace('{% if not trabajadores %}disabled{% endif %}', '');
 const script = fs.readFileSync(path.join(raiz, 'app/static/js/orden-equipos.js'), 'utf8');
 const tick = () => new Promise(resolve => setTimeout(resolve, 10));
-function abrir() {
-    const dom = new JSDOM(plantilla.replace('{{ (formulario_previo or {})|tojson }}', '{}'), { runScripts: 'outside-only', url:'http://localhost/ordenes' });
+function abrir(lan = false, previo = '{}') {
+    const dom = new JSDOM(plantilla.replace('{{ (formulario_previo or {})|tojson }}', previo), { runScripts: 'outside-only', url:lan ? 'http://192.168.100.49:8000/ordenes' : 'http://localhost/ordenes' });
+    if (lan) Object.defineProperty(dom.window.crypto, 'randomUUID', { value: undefined });
+    for (const nombre of ['localStorage', 'sessionStorage']) {
+        Object.defineProperty(dom.window, nombre, { get() { throw new Error('No leer estado residual'); } });
+    }
     dom.window.eval(script);
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
     return dom;
 }
-async function main() {
-    const dom = abrir();
+async function main(lan = false) {
+    const dom = abrir(lan);
     const w = dom.window, d = w.document;
+    assert.equal(d.querySelectorAll('.equipo-bloque').length, 1, 'Equipo 1 visible sin cliente');
+    dom.window.eval(script);
+    d.dispatchEvent(new w.Event('DOMContentLoaded'));
+    assert.equal(d.querySelectorAll('.equipo-bloque').length, 1, 'Inicialización única');
     const bloques = () => [...d.querySelectorAll('.equipo-bloque')];
     const campo = (i, name) => bloques()[i].querySelector(`[name="${name}"]`);
     const boton = i => bloques()[i].querySelector('.guardar-equipo');
@@ -54,7 +63,8 @@ async function main() {
     assert.equal(d.querySelector('[name="dni_ruc"]').readOnly,true);
     assert.equal(bloques()[0].querySelector('.equipo-ticket').open,true);
     assert.equal(bloques()[0].querySelector('iframe').getAttribute('src'),'/ordenes/1/ticket');
-    assert.equal(w.location.href,'http://localhost/ordenes');
+    assert.equal(w.location.href,lan ? 'http://192.168.100.49:8000/ordenes' : 'http://localhost/ordenes');
+    assert.match(new URLSearchParams(envios[0]).get('solicitud_token'), /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     boton(1).click();
     assert.equal(envios.length,1,'El segundo equipo vacío debe validarse por separado');
     llenar(1);
@@ -85,4 +95,14 @@ async function main() {
     dom.window.close();
     console.log('OK: guardado independiente, mismo cliente, doble clic, validación por bloque, errores, reintento, ticket embebido y técnico compartido.');
 }
-main().catch(e=>{console.error(e);process.exitCode=1;});
+async function todas() {
+    await main(false);
+    await main(true);
+    for (const previo of ['null', '[]', '{invalido', '{"equipos_json":"[]"}']) {
+        const dom = abrir(true, previo);
+        assert.equal(dom.window.document.querySelectorAll('.equipo-bloque').length, 1);
+        dom.window.close();
+    }
+    console.log('OK: localhost y LAN sin randomUUID, almacenamiento bloqueado, estado inicial inválido e inicialización repetida.');
+}
+todas().catch(e=>{console.error(e);process.exitCode=1;});
