@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Órdenes | ServiTech{% endblock %}{% block page_title %}Nueva orden de servicio{% endblock %}
-{% block page_subtitle %}<p class="page-subtitle">Registra la recepción completa y genera el ticket</p>{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Completa el cliente una vez y guarda cada equipo con su propio ticket</p>{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 <div class="card panel-card mb-4">
     <div class="card-body p-4">
-        <form method="post" action="/ordenes">
+        <form id="ordenForm" method="post" action="/ordenes" novalidate>
             <h2 class="section-title"><i class="bi bi-person"></i> Datos del cliente</h2>
-            <div class="row g-3">
+            <div id="datosCliente" class="row g-3">
                 <div class="col-md-6"><label class="form-label">Nombres <span class="required">*</span></label><input
                         name="nombres" class="form-control solo-letras" minlength="2" maxlength="100" required></div>
                 <div class="col-md-6"><label class="form-label">Apellidos <span class="required">*</span></label><input
@@ -20,8 +20,25 @@
                         name="telefono" class="form-control solo-numeros" inputmode="numeric" minlength="9"
                         maxlength="9" pattern="9[0-9]{8}" placeholder="9XXXXXXXX" required></div>
             </div>
+            <p id="documentoEstado" class="form-text mt-3" role="status" aria-live="polite">Ingresa el DNI o RUC para buscar al cliente.</p>
+            <div class="row g-3 mt-2">
+                <div class="col-md-6"><label for="tecnicoResponsable" class="form-label">Técnico responsable <span
+                            class="required">*</span></label><select id="tecnicoResponsable" name="tecnico_responsable" class="form-select"
+                        required>
+                        <option value="">Selecciona un técnico</option>{% for trabajador in trabajadores %}<option
+                            value="{{ trabajador.nombre }}">{{ trabajador.nombre }}</option>{% endfor %}
+                    </select>{% if not trabajadores %}<small class="form-text text-danger">Primero agrega un trabajador
+                        en Ajustes.</small>{% endif %}</div>
+            </div>
             <hr class="my-4">
             <h2 class="section-title"><i class="bi bi-pc-display"></i> Datos del equipo</h2>
+            <p id="cantidadEquipos" class="text-secondary" aria-live="polite">Equipos recibidos: 1</p>
+            <div id="equiposContenedor">
+                <section class="equipo-bloque mb-4" aria-label="Equipo 1">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="h6 mb-0 equipo-numero">Equipo 1</h3>
+                        <button type="button" class="btn btn-sm btn-outline-danger quitar-equipo" hidden>Quitar equipo</button>
+                    </div>
             <div class="row g-3">
                 <div class="col-md-6"><label class="form-label">Tipo <span class="required">*</span></label><select
                         id="tipoEquipo" name="tipo" class="form-select" required>
@@ -54,21 +71,28 @@
                 <div class="col-md-6"><label class="form-label">Observaciones <small>(opcional)</small></label><textarea
                         name="observaciones" class="form-control" maxlength="1000"></textarea></div>
             </div>
-            <hr class="my-4">
-            <h2 class="section-title"><i class="bi bi-file-earmark-text"></i> Datos de la orden</h2>
+            <hr class="my-3">
+            <h2 class="section-title"><i class="bi bi-file-earmark-text"></i> Atención de este equipo</h2>
             <div class="row g-3">
-                <div class="col-md-8"><label class="form-label">Falla indicada por el cliente <span
+                <div class="col-12"><label class="form-label">Falla indicada por el cliente <span
                             class="required">*</span></label><textarea name="falla_reportada" class="form-control"
                         rows="3" required></textarea></div>
-                <div class="col-md-4"><label class="form-label">Técnico responsable <span
-                            class="required">*</span></label><select name="tecnico_responsable" class="form-select"
-                        required>
-                        <option value="">Selecciona un técnico</option>{% for trabajador in trabajadores %}<option
-                            value="{{ trabajador.nombre }}">{{ trabajador.nombre }}</option>{% endfor %}
-                    </select>{% if not trabajadores %}<small class="form-text text-danger">Primero agrega un trabajador
-                        en Ajustes.</small>{% endif %}</div>
-            </div><button class="btn btn-primary mt-4" {% if not trabajadores %}disabled{% endif %}><i
-                    class="bi bi-ticket-perforated"></i> Guardar y generar ticket</button>
+
+            </div>
+                    <div class="equipo-acciones mt-3 d-flex flex-wrap gap-2 align-items-center">
+                        <button type="button" class="btn btn-primary guardar-equipo" {% if not trabajadores %}disabled{% endif %}>Guardar y generar ticket</button>
+                        <span class="equipo-estado" role="status">Pendiente de guardar</span>
+                    </div>
+                    <p class="equipo-error text-danger mt-2" role="alert" hidden></p>
+                    <details class="equipo-ticket mt-3" hidden>
+                        <summary>Ver ticket</summary>
+                        <button type="button" class="btn btn-sm btn-outline-dark imprimir-equipo my-2" disabled>Imprimir ticket</button>
+                        <iframe class="ticket-iframe" title="Ticket del equipo" hidden></iframe>
+                    </details>
+                </section>
+            </div>
+            <button id="agregarEquipo" type="button" class="btn btn-outline-primary">+ Agregar otro equipo</button>
+            <script id="formularioPrevio" type="application/json">{{ (formulario_previo or {})|tojson }}</script>
         </form>
     </div>
 </div>
@@ -76,7 +100,7 @@
     <div class="card-body p-4">
         <h2 class="section-title">Órdenes registradas</h2>
         <div class="table-responsive">
-            <table class="table align-middle">
+            <table id="ordenesRegistradas" class="table align-middle">
                 <thead>
                     <tr>
                         <th>Orden</th>
@@ -89,8 +113,7 @@
                     {% for orden in ordenes %}<tr>
                         <td class="fw-semibold">{{ orden.numero_orden }}<br><small class="text-secondary">{{
                                 orden.fecha_ingreso.strftime("%d/%m/%Y") }}</small></td>
-                        <td>{{ orden.equipo.cliente.nombres }} {{ orden.equipo.cliente.apellidos }}<br><small>{{
-                                orden.equipo.tipo }} {{ orden.equipo.marca }}</small></td>
+                        <td>{{ orden.equipo.cliente.nombres }} {{ orden.equipo.cliente.apellidos }}<br><small>{% for equipo in orden.equipos_recibidos %}{{ equipo.tipo }} {{ equipo.marca }} {{ equipo.modelo or "" }}{% if not loop.last %} · {% endif %}{% endfor %}</small></td>
                         <td><span
                                 class="order-state state-{{ orden.estado|lower|replace(' ', '-')|replace('ó', 'o') }}">{{
                                 orden.estado }}</span><small class="state-help">El estado avanza desde el panel
@@ -144,58 +167,9 @@
                     de 80 mm</small></div><a class="ticket-close" href="/ordenes" aria-label="Cerrar">×</a>
         </div>
         <div class="ticket-preview-wrap">
-            <article id="ticketImprimible" class="thermal-ticket">
-                <img class="ticket-logo" src="{{ url_for('static', path='/images/logo-ticket-servitech.png') }}"
-                    alt="Logo de ServiTech">
-                <header class="ticket-business-header">
-                    <p class="ticket-legal-name">A &amp; O SERVICIOS INFORMÁTICOS SOCIEDAD<br>COMERCIAL DE RESPONSABILIDAD LIMITADA</p>
-                    <h2 class="ticket-brand-name">SERVITECH</h2>
-                    <p class="ticket-address">CAL. AREQUIPA NRO. 584 C.P. AREQUIPA 584<br>AREQUIPA - ISLAY - MOLLENDO</p>
-                    <p>Cel. 922048201 - 912314022</p>
-                    <p>R.U.C. N.º 20611128291</p>
-                </header>
-                <div class="ticket-divider"></div>
-                <h2>ORDEN DE RECEPCIÓN</h2>
-                <p class="ticket-order">{{ ticket_orden.numero_orden }}</p>
-                <p>{{ (ticket_orden.fecha_ingreso|fecha_peru).strftime("%d/%m/%Y %I:%M %p") }}</p>
-                <div class="ticket-divider"></div>
-                <dl>
-                    <dt>CLIENTE</dt>
-                    <dd>{{ ticket_orden.equipo.cliente.nombres }} {{ ticket_orden.equipo.cliente.apellidos }}</dd>
-                    <dt>DNI/RUC</dt>
-                    <dd>{{ ticket_orden.equipo.cliente.dni_ruc }}</dd>
-                    <dt>CELULAR</dt>
-                    <dd>{{ ticket_orden.equipo.cliente.telefono }}</dd>
-                </dl>
-                <div class="ticket-divider"></div>
-                <dl>
-                    <dt>EQUIPO</dt>
-                    <dd>{{ ticket_orden.equipo.tipo }}</dd>
-                    <dt>MARCA / MODELO</dt>
-                    <dd>{{ ticket_orden.equipo.marca }} / {{ ticket_orden.equipo.modelo }}</dd>
-                    <dt>SERIE</dt>
-                    <dd>{{ ticket_orden.equipo.numero_serie or "Sin serie" }}</dd>
-                    <dt>ACCESORIOS</dt>
-                    <dd>{{ ticket_orden.equipo.accesorios }}</dd>
-                </dl>
-                <div class="ticket-divider"></div>
-                <dl>
-                    <dt>FALLA REPORTADA</dt>
-                    <dd>{{ ticket_orden.falla_reportada }}</dd>
-                    <dt>TÉCNICO</dt>
-                    <dd>{{ ticket_orden.tecnico_responsable }}</dd>
-                    <dt>ESTADO</dt>
-                    <dd>{{ ticket_orden.estado }}</dd>
-                </dl>
-                <div class="ticket-divider"></div>
-                <p class="pickup-notice"><strong>AVISO DE RECOJO</strong><br>Una vez terminada y comunicada la reparación de su equipo, el cliente tendrá
-                    hasta 2 semanas para recogerlo. En caso contrario, asumirá el costo de
-                    almacenamiento en nuestras instalaciones.
-                    Si transcurren más de 3 meses sin recoger el producto, este podrá entrar en
-                    remate para cubrir los gastos de reparación y almacenamiento.</p>
-                <p class="ticket-thanks">Gracias por confiar en ServiTech</p>
-            </article>
+            {% include 'ticket_contenido.html' %}
         </div>
+        {% include 'ticket_acciones.html' %}
         <div class="ticket-modal-actions"><a class="btn btn-outline-dark" href="/ordenes">Cerrar</a><button
                 class="btn btn-primary" type="button" onclick="imprimirTicket()"><i class="bi bi-printer"></i> Imprimir
                 boleta</button></div>

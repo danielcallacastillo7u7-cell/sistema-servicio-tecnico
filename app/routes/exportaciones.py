@@ -18,7 +18,7 @@ templates = Jinja2Templates(directory=Path(__file__).resolve().parent.parent / "
 
 
 def _contexto(db: Session, mensaje: str | None = None, error: str | None = None):
-    return {"seccion": "exportaciones", "tipos": TIPOS_EXPORTACION, "estados": ESTADOS_VALIDOS, "tecnicos": db.query(Trabajador).filter(Trabajador.activo.is_(True)).order_by(Trabajador.nombre).all(), "historial": db.query(HistorialExportacion).order_by(HistorialExportacion.id.desc()).limit(30).all(), "mensaje": mensaje, "error": error}
+    return {"seccion": "exportaciones", "tipos": TIPOS_EXPORTACION, "estados": ESTADOS_VALIDOS, "tecnicos": db.query(Trabajador).filter(Trabajador.activo.is_(True)).order_by(Trabajador.nombre).all(), "historial": db.query(HistorialExportacion).order_by(HistorialExportacion.id.desc()).limit(30).all(), "mensaje": mensaje, "error": error, "hoja_configurada": bool(__import__('os').getenv('GOOGLE_SHEETS_SPREADSHEET_ID'))}
 
 
 @router.get("")
@@ -49,10 +49,10 @@ def descargar_excel(tipo: str = Form(...), fecha_inicio: date | None = Form(None
 
 
 @router.post("/google-sheets")
-def enviar_google_sheets(tipo: str = Form(...), fecha_inicio: date | None = Form(None), fecha_fin: date | None = Form(None), estado: str = Form(""), tecnico: str = Form(""), db: Session = Depends(obtener_db)):
+def enviar_google_sheets(tipo: str = Form(...), fecha_inicio: date | None = Form(None), fecha_fin: date | None = Form(None), estado: str = Form(""), tecnico: str = Form(""), hoja_referencia: str = Form(""), nombre_hoja: str = Form(""), db: Session = Depends(obtener_db)):
     try:
         filas = _filas(db, tipo, fecha_inicio, fecha_fin, estado, tecnico)
-        creados, actualizados = sincronizar_google_sheets(filas)
+        creados, actualizados = sincronizar_google_sheets(filas, hoja_referencia, nombre_hoja)
         db.add(HistorialExportacion(tipo_informacion=tipo, destino="Google Sheets", cantidad_registros=len(filas), detalle=f"{creados} creados, {actualizados} actualizados por id_orden"))
         db.commit()
         return RedirectResponse(f"/exportaciones?mensaje={quote(f'Google Sheets sincronizado: {creados} filas nuevas y {actualizados} actualizadas.')}", status_code=303)

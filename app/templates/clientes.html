@@ -1,47 +1,49 @@
 {% extends "base.html" %}
-{% block title %}Clientes | ServiTech{% endblock %}{% block page_title %}Clientes{% endblock %}
+{% block title %}Clientes | ServiTech{% endblock %}{% block page_title %}Clientes e historial{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Encuentra un cliente y consulta las atenciones de sus equipos</p>{% endblock %}
 {% block content %}
+<style>#clienteHistorial[hidden],#clientesApp button[hidden],#todasReparaciones[hidden]{display:none!important}#clienteHistorial article{overflow-wrap:anywhere}#clienteHistorial p{white-space:pre-wrap}#todasReparaciones>summary{cursor:pointer;font-weight:600;padding:12px 0}</style>
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<div class="card panel-card mb-4">
-    <div class="card-body p-4">
-        <h2 class="section-title">Registrar cliente</h2>
-        <form method="post" action="/clientes">
-            <div class="row g-3">
-                <div class="col-md-6"><label class="form-label">Nombres</label><input name="nombres"
-                        class="form-control" required></div>
-                <div class="col-md-6"><label class="form-label">Apellidos</label><input name="apellidos"
-                        class="form-control" required></div>
-                <div class="col-md-6"><label class="form-label">DNI o RUC</label><input name="dni_ruc"
-                        class="form-control" required></div>
-                <div class="col-md-6"><label class="form-label">Teléfono</label><input name="telefono"
-                        class="form-control" required></div>
-            </div><button class="btn btn-primary mt-3">Guardar cliente</button>
-        </form>
-    </div>
-</div>
-<div class="card panel-card">
-    <div class="card-body p-4">
-        <h2 class="section-title">Clientes registrados</h2>
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th>Cliente</th>
-                        <th>DNI/RUC</th>
-                        <th>Teléfono</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cliente in clientes %}<tr>
-                        <td>{{ cliente.nombres }} {{ cliente.apellidos }}</td>
-                        <td>{{ cliente.dni_ruc }}</td>
-                        <td>{{ cliente.telefono }}</td>
-                    </tr>{% else %}<tr>
-                        <td colspan="3">Todavía no hay clientes.</td>
-                    </tr>{% endfor %}
-                </tbody>
-            </table>
+<div id="clientesApp">
+    <section class="card panel-card mb-4"><div class="card-body p-4">
+        <h2 class="section-title"><i class="bi bi-people"></i> Todos los clientes</h2>
+        <label for="buscarClientes" class="form-label">Buscar por nombre, apellidos, DNI/RUC o teléfono</label>
+        <input id="buscarClientes" class="form-control" type="search" maxlength="100" placeholder="Escribe para buscar…" autocomplete="off">
+        <p id="clientesMensaje" class="form-text mt-2" role="status" aria-live="polite"></p>
+        <div class="table-responsive"><table class="table align-middle">
+            <thead><tr><th>Cliente</th><th>DNI/RUC</th><th>Teléfono</th><th>Reparaciones</th><th>Última reparación</th><th>Historial</th></tr></thead>
+            <tbody id="clientesFilas"></tbody>
+        </table></div>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <button id="clientesAnterior" class="btn btn-sm btn-outline-dark" type="button">Anterior</button>
+            <span id="clientesPagina"></span>
+            <button id="clientesSiguiente" class="btn btn-sm btn-outline-dark" type="button">Siguiente</button>
+            <button id="clientesReintentar" class="btn btn-sm btn-outline-primary" type="button" hidden>Reintentar</button>
         </div>
-    </div>
+    </div></section>
+    <section id="clienteHistorial" class="card panel-card mb-4" hidden><div class="card-body p-4">
+        <div class="d-flex justify-content-between gap-3"><h2 id="historialTitulo" class="section-title" tabindex="-1">Historial del cliente</h2>
+            <button id="cerrarHistorial" type="button" class="btn btn-sm btn-outline-dark">Cerrar historial</button></div>
+        <p id="historialCliente"></p><p id="historialResumen" class="text-secondary"></p>
+        <h3 class="h6">Última reparación</h3>
+        <div id="ultimaReparacion"></div>
+        <details id="todasReparaciones">
+        <summary id="resumenReparaciones">Ver todas las reparaciones</summary>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6"><label for="historialEquipo" class="form-label">Equipo</label><select id="historialEquipo" class="form-select"><option value="">Todos los equipos</option></select></div>
+            <div class="col-md-6"><label for="buscarHistorial" class="form-label">Buscar en el historial</label><input id="buscarHistorial" type="search" class="form-control" maxlength="100" placeholder="Orden, marca, serie, falla, estado o técnico…"></div>
+        </div>
+        <p id="historialMensaje" class="form-text" role="status" aria-live="polite"></p>
+        <div id="historialOrdenes"></div>
+        <div class="d-flex gap-2 align-items-center flex-wrap mt-3">
+            <button id="historialAnterior" type="button" class="btn btn-sm btn-outline-dark">Anterior</button>
+            <span id="historialPagina"></span>
+            <button id="historialSiguiente" type="button" class="btn btn-sm btn-outline-dark">Siguiente</button>
+        </div>
+        </details>
+        <p id="historialCarga" class="form-text" role="status"></p>
+        <button id="historialReintentar" type="button" class="btn btn-sm btn-outline-primary" hidden>Reintentar</button>
+    </div></section>
 </div>
+<script src="{{ url_for('static', path='/js/clientes-historial.js') }}?v=compacto-20260908"></script>
 {% endblock %}

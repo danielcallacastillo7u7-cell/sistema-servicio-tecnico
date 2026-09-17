@@ -72,10 +72,10 @@ def numero_whatsapp(telefono: str) -> str:
     return f"51{numero}" if len(numero) == 9 else numero
 
 
-def contexto_diagnosticos(db: Session, error: str | None = None):
+def contexto_diagnosticos(db: Session, error: str | None = None, orden_seleccionada_id: int | None = None):
     ordenes_pendientes = (
         db.query(OrdenServicio)
-        .options(joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente))
+        .options(joinedload(OrdenServicio.recepciones), joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente))
         .filter(OrdenServicio.diagnostico == None)  # noqa: E711
         .order_by(OrdenServicio.id.desc())
         .all()
@@ -101,6 +101,7 @@ def contexto_diagnosticos(db: Session, error: str | None = None):
             }
     return {
         "ordenes_pendientes": ordenes_pendientes,
+        "orden_seleccionada_id": orden_seleccionada_id,
         "diagnosticos": diagnosticos,
         "mensajes": mensajes,
         "error": error,
@@ -109,11 +110,21 @@ def contexto_diagnosticos(db: Session, error: str | None = None):
 
 
 @router.get("")
-def listar_diagnosticos(request: Request, db: Session = Depends(obtener_db)):
+def listar_diagnosticos(request: Request, db: Session = Depends(obtener_db), orden_id: int | None = None):
+    error = None
+    estado = 200
+    seleccion = orden_id
+    if orden_id is not None:
+        orden = db.get(OrdenServicio, orden_id)
+        if orden is None:
+            error, estado, seleccion = "La orden seleccionada no existe.", 404, None
+        elif orden.diagnostico is not None:
+            error, estado, seleccion = "La orden seleccionada ya tiene un diagnóstico registrado.", 409, None
     return templates.TemplateResponse(
         request=request,
         name="diagnosticos.html",
-        context=contexto_diagnosticos(db),
+        context=contexto_diagnosticos(db, error, seleccion),
+        status_code=estado,
     )
 
 
@@ -145,7 +156,7 @@ def registrar_diagnostico(
         return templates.TemplateResponse(
             request=request,
             name="diagnosticos.html",
-            context=contexto_diagnosticos(db, str(error)),
+            context=contexto_diagnosticos(db, str(error), orden_id),
             status_code=400,
         )
 
@@ -154,7 +165,7 @@ def registrar_diagnostico(
         return templates.TemplateResponse(
             request=request,
             name="diagnosticos.html",
-            context=contexto_diagnosticos(db, "Puedes adjuntar como máximo 5 imágenes."),
+            context=contexto_diagnosticos(db, "Puedes adjuntar como máximo 5 imágenes.", orden_id),
             status_code=400,
         )
 
@@ -164,7 +175,7 @@ def registrar_diagnostico(
             return templates.TemplateResponse(
                 request=request,
                 name="diagnosticos.html",
-                context=contexto_diagnosticos(db, "Las evidencias deben ser imágenes JPG, PNG o WebP."),
+                context=contexto_diagnosticos(db, "Las evidencias deben ser imágenes JPG, PNG o WebP.", orden_id),
                 status_code=400,
             )
         contenido = archivo.file.read(MAXIMO_BYTES_IMAGEN + 1)
@@ -172,7 +183,7 @@ def registrar_diagnostico(
             return templates.TemplateResponse(
                 request=request,
                 name="diagnosticos.html",
-                context=contexto_diagnosticos(db, "Cada imagen puede pesar como máximo 4 MB."),
+                context=contexto_diagnosticos(db, "Cada imagen puede pesar como máximo 4 MB.", orden_id),
                 status_code=400,
             )
         evidencias.append((archivo, contenido))

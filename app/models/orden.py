@@ -26,6 +26,16 @@ class OrdenServicio(Base):
     )
 
     equipo = relationship("Equipo", back_populates="ordenes")
+    recepciones = relationship(
+        "OrdenEquipo", back_populates="orden", cascade="all, delete-orphan",
+        order_by="OrdenEquipo.posicion",
+    )
+
+    @property
+    def equipos_recibidos(self):
+        # Compatibilidad con órdenes anteriores a la migración.
+        return self.recepciones or [self.equipo]
+
     diagnostico = relationship(
         "Diagnostico",
         back_populates="orden",

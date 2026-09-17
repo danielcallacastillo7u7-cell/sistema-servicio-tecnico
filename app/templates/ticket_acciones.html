@@ -1,0 +1,6 @@
+<div class="ticket-share-actions" style="padding:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <a class="btn btn-outline-dark" href="/ordenes/{{ ticket_orden.id }}/ticket.pdf" download>Descargar PDF</a>
+    <a class="btn btn-outline-success" href="/ordenes/{{ ticket_orden.id }}/ticket/whatsapp" target="_blank" rel="noopener noreferrer">Abrir WhatsApp del cliente</a>
+    <small style="flex-basis:100%">Descarga el PDF y adjúntalo en WhatsApp con el botón de adjuntar → Documento. Revisa el destinatario antes de enviarlo.</small>
+</div>
+<style>@media print { .ticket-share-actions { display:none!important; } }</style>

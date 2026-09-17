@@ -79,9 +79,14 @@
             <div class="box"><strong>Cliente</strong><br>{{ orden.equipo.cliente.nombres }} {{
                 orden.equipo.cliente.apellidos }}<br>DNI/RUC: {{ orden.equipo.cliente.dni_ruc }}<br>Teléfono: {{
                 orden.equipo.cliente.telefono }}</div>
-            <div class="box"><strong>Equipo</strong><br>{{ orden.equipo.tipo }} {{ orden.equipo.marca }} {{
-                orden.equipo.modelo or "" }}<br>Serie: {{ orden.equipo.numero_serie or "—" }}<br>Accesorios: {{
-                orden.equipo.accesorios or "—" }}</div>
+            <div class="box full"><strong>Equipos recibidos: {{ orden.equipos_recibidos|length }}</strong></div>
+            {% for equipo in orden.equipos_recibidos %}
+            <div class="box full"><strong>Equipo {{ loop.index }}</strong><br>
+                {{ equipo.tipo }} {{ equipo.marca }} {{ equipo.modelo or "" }}<br>
+                Serie: {{ equipo.numero_serie or "Sin serie" }}<br>
+                Accesorios: {{ equipo.accesorios or "Ninguno" }}<br>
+                Observaciones: {{ equipo.observaciones or "Sin observaciones" }}</div>
+            {% endfor %}
             <div class="box full"><strong>Falla reportada</strong>
                 <p>{{ orden.falla_reportada }}</p>
             </div>{% if orden.diagnostico %}<div class="box full"><strong>Diagnóstico</strong>

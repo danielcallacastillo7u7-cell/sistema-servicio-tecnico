@@ -16,8 +16,8 @@
                 <div class="col-12"><label class="form-label">Orden pendiente</label><select name="orden_id"
                         class="form-select" required>
                         <option value="">Selecciona una orden</option>{% for orden in ordenes_pendientes %}<option
-                            value="{{ orden.id }}">{{ orden.numero_orden }} — {{ orden.equipo.cliente.nombres }} {{
-                            orden.equipo.cliente.apellidos }} — {{ orden.equipo.tipo }} {{ orden.equipo.marca }}
+                            value="{{ orden.id }}" {% if orden.id == orden_seleccionada_id %}selected{% endif %}>{{ orden.numero_orden }} — {{ orden.equipo.cliente.nombres }} {{
+                            orden.equipo.cliente.apellidos }} — {% for equipo in orden.equipos_recibidos %}{{ equipo.tipo }} {{ equipo.marca }} {{ equipo.modelo or "" }}{% if not loop.last %} · {% endif %}{% endfor %}
                         </option>{% endfor %}
                     </select></div>
                 <div class="col-md-6"><label class="form-label">Falla encontrada</label><textarea

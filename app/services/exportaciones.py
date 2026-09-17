@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import date, datetime, time
 from decimal import Decimal
 from io import BytesIO
@@ -25,7 +26,7 @@ def _valor(valor):
 
 
 def obtener_filas(db: Session, tipo: str, fecha_inicio: date | None = None, fecha_fin: date | None = None, estado: str | None = None, tecnico: str | None = None):
-    consulta = db.query(OrdenServicio).options(joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente), joinedload(OrdenServicio.diagnostico))
+    consulta = db.query(OrdenServicio).options(joinedload(OrdenServicio.recepciones), joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente), joinedload(OrdenServicio.diagnostico))
     if fecha_inicio:
         consulta = consulta.filter(OrdenServicio.fecha_ingreso >= datetime.combine(fecha_inicio, time.min))
     if fecha_fin:
@@ -46,6 +47,13 @@ def obtener_filas(db: Session, tipo: str, fecha_inicio: date | None = None, fech
             fila = {**base, "id_diagnostico": diagnostico.id if diagnostico else None, "falla_encontrada": diagnostico.falla_encontrada if diagnostico else None, "solucion_recomendada": diagnostico.solucion_recomendada if diagnostico else None, "repuestos_necesarios": diagnostico.repuestos_necesarios if diagnostico else None, "costo_estimado": diagnostico.costo_estimado if diagnostico else None, "fecha_diagnostico": diagnostico.fecha_diagnostico if diagnostico else None}
         else:
             fila = {**base, "falla_reportada": orden.falla_reportada, "id_cliente": cliente.id, "cliente": f"{cliente.nombres} {cliente.apellidos}", "dni_ruc": cliente.dni_ruc, "telefono": cliente.telefono, "id_equipo": equipo.id, "tipo_equipo": equipo.tipo, "marca": equipo.marca, "modelo": equipo.modelo, "numero_serie": equipo.numero_serie, "falla_encontrada": diagnostico.falla_encontrada if diagnostico else None, "solucion_recomendada": diagnostico.solucion_recomendada if diagnostico else None, "costo_estimado": diagnostico.costo_estimado if diagnostico else None}
+        fila["cantidad_equipos"] = len(orden.equipos_recibidos)
+        fila["equipos_recibidos"] = json.dumps([
+            dict(equipo_id=e.equipo_id if hasattr(e, "equipo_id") else e.id,
+                 tipo=e.tipo, marca=e.marca, modelo=e.modelo, numero_serie=e.numero_serie,
+                 accesorios=e.accesorios, observaciones=e.observaciones)
+            for e in orden.equipos_recibidos
+        ], ensure_ascii=False)
         filas.append({clave: _valor(valor) for clave, valor in fila.items()})
     return filas
 
@@ -72,12 +80,26 @@ def crear_excel(filas: list[dict], titulo: str) -> BytesIO:
     return salida
 
 
-def sincronizar_google_sheets(filas: list[dict]) -> tuple[int, int]:
+def extraer_spreadsheet_id(referencia: str) -> str:
+    """Acepta el ID de la hoja o una URL completa de Google Sheets."""
+    valor = (referencia or "").strip()
+    if not valor:
+        raise ValueError("Pega el enlace o ID de la hoja de Google Sheets.")
+    coincidencia = re.search(r"/spreadsheets/d/([a-zA-Z0-9_-]+)", valor)
+    identificador = coincidencia.group(1) if coincidencia else valor
+    if not re.fullmatch(r"[a-zA-Z0-9_-]{20,200}", identificador):
+        raise ValueError("El enlace o ID de Google Sheets no es válido.")
+    return identificador
+
+
+def sincronizar_google_sheets(filas: list[dict], referencia: str = "", nombre_hoja: str = "") -> tuple[int, int]:
     credenciales = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
-    spreadsheet_id = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID")
-    nombre_hoja = os.getenv("GOOGLE_SHEETS_WORKSHEET", "Exportaciones")
-    if not credenciales or not spreadsheet_id:
-        raise RuntimeError("Configura GOOGLE_SERVICE_ACCOUNT_JSON y GOOGLE_SHEETS_SPREADSHEET_ID en .env.")
+    spreadsheet_id = extraer_spreadsheet_id(referencia or os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID", ""))
+    nombre_hoja = (nombre_hoja or os.getenv("GOOGLE_SHEETS_WORKSHEET", "Exportaciones")).strip()
+    if not nombre_hoja:
+        raise ValueError("Indica el nombre de la pestaña de Google Sheets.")
+    if not credenciales:
+        raise RuntimeError("Configura GOOGLE_SERVICE_ACCOUNT_JSON en .env y comparte la hoja con esa cuenta.")
     try:
         from google.oauth2.service_account import Credentials
         from googleapiclient.discovery import build
@@ -89,7 +111,7 @@ def sincronizar_google_sheets(filas: list[dict]) -> tuple[int, int]:
     hojas = build("sheets", "v4", credentials=cuenta, cache_discovery=False).spreadsheets()
     existente = hojas.values().get(spreadsheetId=spreadsheet_id, range=f"'{nombre_hoja}'!A:ZZ").execute().get("values", [])
     encabezados = list(filas[0].keys()) if filas else ["id_orden"]
-    if not existente:
+    if not existente or existente[0] != encabezados:
         hojas.values().update(spreadsheetId=spreadsheet_id, range=f"'{nombre_hoja}'!A1", valueInputOption="RAW", body={"values": [encabezados]}).execute()
     por_id = {str(fila[0]): indice for indice, fila in enumerate(existente[1:], start=2) if fila}
     creados = actualizados = 0

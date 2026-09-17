@@ -1,17 +1,26 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import hmac
+import hashlib
+from uuid import UUID
+from app.models.solicitud_equipo import SolicitudEquipo
+import json
+from sqlalchemy.exc import IntegrityError
+from app.models.orden_equipo import OrdenEquipo
 import os
 import re
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse, Response
+from urllib.parse import urlencode
+from app.services.ticket_pdf import generar_ticket_pdf
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import obtener_db
 from app.models.cancelacion import CancelacionOrden
 from app.models.cliente import Cliente
+from app.services.clientes import datos_cliente_coinciden
 from app.models.diagnostico import Diagnostico
 from app.models.equipo import Equipo
 from app.models.historial import HistorialEstado
@@ -62,7 +71,7 @@ def contexto_ordenes(
 ):
     ordenes = (
         db.query(OrdenServicio)
-        .options(joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente))
+        .options(joinedload(OrdenServicio.recepciones), joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente))
         .order_by(OrdenServicio.id.desc())
         .all()
     )
@@ -76,7 +85,7 @@ def contexto_ordenes(
     if ticket_id is not None:
         ticket_orden = (
             db.query(OrdenServicio)
-            .options(joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente))
+            .options(joinedload(OrdenServicio.recepciones), joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente))
             .filter(OrdenServicio.id == ticket_id)
             .first()
         )
@@ -104,137 +113,168 @@ def listar_ordenes(
     )
 
 
+CAMPOS_EQUIPO = {
+    "tipo": 80, "tipo_otro": 80, "marca": 80, "modelo": 100,
+    "numero_serie": 100, "accesorio_opcion": 20,
+    "accesorios_detalle": 500, "observaciones": 1000,
+}
+
+
+def validar_equipos(datos):
+    if not isinstance(datos, list) or not datos:
+        raise ValueError("Agrega al menos un equipo.")
+    resultado, series = [], set()
+    for posicion, dato in enumerate(datos, 1):
+        if not isinstance(dato, dict):
+            raise ValueError(f"Equipo {posicion}: formato incorrecto.")
+        limpio = {}
+        for campo, limite in CAMPOS_EQUIPO.items():
+            valor = dato.get(campo, "")
+            if not isinstance(valor, str) or len(valor) > limite:
+                raise ValueError(f"Equipo {posicion}: revisa el campo {campo} (máximo {limite} caracteres).")
+            limpio[campo] = valor.strip()
+        tipo = limpio["tipo"]
+        if tipo not in {"Laptop", "Impresora", "CPU", "Otro"}:
+            raise ValueError(f"Equipo {posicion}: selecciona un tipo válido.")
+        if tipo == "Otro" and not limpio["tipo_otro"]:
+            raise ValueError(f"Equipo {posicion}: especifica el tipo.")
+        if not limpio["modelo"]:
+            raise ValueError(f"Equipo {posicion}: el modelo es obligatorio.")
+        opcion = limpio["accesorio_opcion"]
+        if opcion == "Ninguno":
+            accesorios = "Ninguno"
+        elif opcion == "Especificar" and limpio["accesorios_detalle"]:
+            accesorios = limpio["accesorios_detalle"]
+        else:
+            raise ValueError(f"Equipo {posicion}: indica los accesorios o selecciona Ninguno.")
+        serie = limpio["numero_serie"] or None
+        if serie and serie in series:
+            raise ValueError(f"Equipo {posicion}: el número de serie está repetido en esta orden.")
+        if serie:
+            series.add(serie)
+        resultado.append(dict(
+            tipo=limpio["tipo_otro"] if tipo == "Otro" else tipo,
+            marca=limpio["marca"] or "Sin especificar", modelo=limpio["modelo"],
+            numero_serie=serie, accesorios=accesorios,
+            observaciones=limpio["observaciones"] or None,
+        ))
+    return resultado
+
+
+def respuesta_equipo(orden):
+    return JSONResponse({
+        "id": orden.id, "numero_orden": orden.numero_orden, "estado": orden.estado,
+        "ticket_url": f"/ordenes/{orden.id}/ticket",
+    })
+
+
+@router.post("/guardar-equipo")
 @router.post("")
-def registrar_orden(
-    request: Request,
-    nombres: str = Form(...),
-    apellidos: str = Form(...),
-    dni_ruc: str = Form(...),
-    telefono: str = Form(...),
-    tipo: str = Form(...),
-    tipo_otro: str = Form(""),
-    marca: str = Form(""),
-    modelo: str = Form(...),
-    numero_serie: str = Form(""),
-    accesorio_opcion: str = Form(...),
-    accesorios_detalle: str = Form(""),
-    observaciones: str = Form(""),
-    falla_reportada: str = Form(...),
-    tecnico_responsable: str = Form(...),
-    db: Session = Depends(obtener_db),
-):
-    nombres = " ".join(nombres.split())
-    apellidos = " ".join(apellidos.split())
-    dni_ruc = dni_ruc.strip()
-    telefono = telefono.strip()
-    modelo = modelo.strip()
-    numero_serie = numero_serie.strip()
+async def registrar_orden(request: Request, db: Session = Depends(obtener_db)):
+    formulario = await request.form()
+    valores = {k: v for k, v in formulario.items() if isinstance(v, str)}
 
+    individual = request.url.path.endswith("/guardar-equipo")
+
+    def error(mensaje, estado=400):
+        db.rollback()
+        if individual:
+            return JSONResponse({"detail": mensaje}, status_code=estado)
+        contexto = contexto_ordenes(db, mensaje)
+        contexto["formulario_previo"] = valores
+        return templates.TemplateResponse(request=request, name="ordenes.html", context=contexto, status_code=estado)
+
+    token, huella = None, None
+    if individual:
+        try:
+            token = str(UUID(valores.get("solicitud_token", "")))
+        except ValueError:
+            return error("No se pudo identificar el guardado. Vuelve a abrir el formulario.")
+        contenido = {k: v for k, v in valores.items() if k != "solicitud_token"}
+        huella = hashlib.sha256(json.dumps(contenido, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+        previa = db.get(SolicitudEquipo, token)
+        if previa:
+            if previa.huella != huella:
+                return error("Este guardado ya se registró con otros datos. Revisa su ticket.", 409)
+            return respuesta_equipo(db.get(OrdenServicio, previa.orden_id))
+
+    nombres = " ".join(valores.get("nombres", "").split())
+    apellidos = " ".join(valores.get("apellidos", "").split())
+    dni_ruc = valores.get("dni_ruc", "").strip()
+    telefono = valores.get("telefono", "").strip()
+    falla = valores.get("falla_reportada", "").strip()
+    tecnico = valores.get("tecnico_responsable", "")
     if not re.fullmatch(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]{2,100}", nombres):
-        mensaje = "Los nombres solo pueden contener letras y espacios."
-    elif not re.fullmatch(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]{2,100}", apellidos):
-        mensaje = "Los apellidos solo pueden contener letras y espacios."
-    elif not re.fullmatch(r"(?:\d{8}|\d{11})", dni_ruc):
-        mensaje = "El DNI debe tener 8 dígitos o el RUC 11 dígitos."
-    elif not re.fullmatch(r"9\d{8}", telefono):
-        mensaje = "El celular peruano debe comenzar con 9 y tener 9 dígitos."
-    elif tipo not in {"Laptop", "Impresora", "CPU", "Otro"}:
-        mensaje = "Selecciona un tipo de equipo válido."
-    elif tipo == "Otro" and not tipo_otro.strip():
-        mensaje = "Especifica el tipo de equipo."
-    elif not modelo:
-        mensaje = "El modelo del equipo es obligatorio."
-    elif not falla_reportada.strip():
-        mensaje = "La falla indicada por el cliente es obligatoria."
-    elif not db.query(Trabajador).filter(
-        Trabajador.nombre == tecnico_responsable,
-        Trabajador.activo.is_(True),
-    ).first():
-        mensaje = "Selecciona un técnico responsable registrado."
-    else:
-        mensaje = None
+        return error("Los nombres solo pueden contener letras y espacios.")
+    if not re.fullmatch(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]{2,100}", apellidos):
+        return error("Los apellidos solo pueden contener letras y espacios.")
+    if not re.fullmatch(r"(?:[0-9]{8}|[0-9]{11})", dni_ruc):
+        return error("El DNI debe tener 8 dígitos o el RUC 11 dígitos.")
+    if not re.fullmatch(r"9[0-9]{8}", telefono):
+        return error("El celular peruano debe comenzar con 9 y tener 9 dígitos.")
+    if not falla:
+        return error("La falla indicada por el cliente es obligatoria.")
+    if not db.query(Trabajador).filter(Trabajador.nombre == tecnico, Trabajador.activo.is_(True)).first():
+        return error("Selecciona un técnico responsable registrado.")
+    try:
+        # Los envíos anteriores sin JSON siguen creando una orden de un equipo.
+        datos = json.loads(valores["equipos_json"]) if valores.get("equipos_json") else [valores]
+    except (ValueError, TypeError):
+        return error("No se pudo leer la lista de equipos.")
+    try:
+        equipos = validar_equipos(datos)
+        if individual and len(equipos) != 1:
+            raise ValueError("Guarda un solo equipo con cada botón.")
+    except ValueError as exc:
+        return error(str(exc))
 
-    if mensaje:
-        return templates.TemplateResponse(
-            request=request,
-            name="ordenes.html",
-            context=contexto_ordenes(db, mensaje),
-            status_code=400,
-        )
+    try:
+        cliente = db.query(Cliente).filter(Cliente.dni_ruc == dni_ruc).first()
+        if cliente is None:
+            cliente = Cliente(nombres=nombres, apellidos=apellidos, dni_ruc=dni_ruc, telefono=telefono)
+            db.add(cliente)
+            db.flush()
+        elif not datos_cliente_coinciden(cliente, nombres, apellidos, telefono):
+            return error("Este DNI/RUC ya pertenece a un cliente registrado. Usa sus datos guardados; una nueva orden no puede modificarlos.", 409)
 
-    tipo_final = tipo_otro.strip() if tipo == "Otro" else tipo
-    if accesorio_opcion == "Ninguno":
-        accesorios = "Ninguno"
-    elif accesorio_opcion == "Especificar" and accesorios_detalle.strip():
-        accesorios = accesorios_detalle.strip()
-    else:
-        return templates.TemplateResponse(
-            request=request,
-            name="ordenes.html",
-            context=contexto_ordenes(db, "Indica los accesorios entregados o selecciona Ninguno."),
-            status_code=400,
-        )
+        recibidos = []
+        for posicion, datos_equipo in enumerate(equipos, 1):
+            serie = datos_equipo["numero_serie"]
+            equipo = db.query(Equipo).filter(Equipo.numero_serie == serie).first() if serie else None
+            if equipo is not None and equipo.cliente_id != cliente.id:
+                return error(f"Equipo {posicion}: ese número de serie pertenece a otro cliente.", 409)
+            if equipo is None:
+                equipo = Equipo(cliente_id=cliente.id, **datos_equipo)
+                db.add(equipo)
+                db.flush()
+            else:
+                for campo, valor in datos_equipo.items():
+                    setattr(equipo, campo, valor)
+            recibidos.append(OrdenEquipo(equipo_id=equipo.id, posicion=posicion, **datos_equipo))
 
-    cliente = db.query(Cliente).filter(Cliente.dni_ruc == dni_ruc).first()
-    if cliente is None:
-        cliente = Cliente(
-            nombres=nombres,
-            apellidos=apellidos,
-            dni_ruc=dni_ruc,
-            telefono=telefono,
+        orden = OrdenServicio(
+            equipo_id=recibidos[0].equipo_id, recepciones=recibidos,
+            falla_reportada=falla, tecnico_responsable=tecnico, estado="Recibido",
         )
-        db.add(cliente)
+        db.add(orden)
         db.flush()
-    else:
-        cliente.nombres = nombres
-        cliente.apellidos = apellidos
-        cliente.telefono = telefono
-
-    equipo = None
-    if numero_serie:
-        equipo = db.query(Equipo).filter(Equipo.numero_serie == numero_serie).first()
-        if equipo is not None and equipo.cliente_id != cliente.id:
-            db.rollback()
-            return templates.TemplateResponse(
-                request=request,
-                name="ordenes.html",
-                context=contexto_ordenes(db, "Ese número de serie pertenece a otro cliente."),
-                status_code=409,
-            )
-
-    if equipo is None:
-        equipo = Equipo(
-            cliente_id=cliente.id,
-            tipo=tipo_final,
-            marca=marca.strip() or "Sin especificar",
-            modelo=modelo,
-            numero_serie=numero_serie or None,
-            accesorios=accesorios,
-            observaciones=observaciones.strip() or None,
-        )
-        db.add(equipo)
-        db.flush()
-    else:
-        equipo.tipo = tipo_final
-        equipo.marca = marca.strip() or "Sin especificar"
-        equipo.modelo = modelo
-        equipo.accesorios = accesorios
-        equipo.observaciones = observaciones.strip() or None
-
-    orden = OrdenServicio(
-        equipo_id=equipo.id,
-        falla_reportada=falla_reportada.strip(),
-        tecnico_responsable=tecnico_responsable,
-        estado="Recibido",
-    )
-    db.add(orden)
-    db.flush()
-
-    anio = datetime.now(ZONA_HORARIA_PERU).year
-    orden.numero_orden = f"OT-{anio}-{orden.id:06d}"
-    db.add(HistorialEstado(orden_id=orden.id, estado="Recibido"))
-    db.commit()
-
+        anio = datetime.now(ZONA_HORARIA_PERU).year
+        orden.numero_orden = f"OT-{anio}-{orden.id:06d}"
+        db.add(HistorialEstado(orden_id=orden.id, estado="Recibido"))
+        if individual:
+            db.add(SolicitudEquipo(token=token, huella=huella, orden_id=orden.id))
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        previa = db.get(SolicitudEquipo, token) if individual else None
+        if previa and previa.huella == huella:
+            return respuesta_equipo(db.get(OrdenServicio, previa.orden_id))
+        return error("No se pudo guardar: un cliente o número de serie se registró simultáneamente. Revisa los datos y vuelve a intentar.", 409)
+    except Exception:
+        db.rollback()
+        raise
+    if individual:
+        return respuesta_equipo(orden)
     return RedirectResponse(url=f"/ordenes?ticket={orden.id}", status_code=303)
 
 
@@ -331,7 +371,7 @@ def comprobante(orden_id: int, request: Request, db: Session = Depends(obtener_d
     orden = (
         db.query(OrdenServicio)
         .options(
-            joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente),
+            joinedload(OrdenServicio.recepciones), joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente),
             joinedload(OrdenServicio.historial),
             joinedload(OrdenServicio.diagnostico),
         )
@@ -345,3 +385,44 @@ def comprobante(orden_id: int, request: Request, db: Session = Depends(obtener_d
         name="comprobante.html",
         context={"orden": orden},
     )
+
+
+@router.get("/{orden_id}/ticket")
+def ticket_individual(orden_id: int, request: Request, db: Session = Depends(obtener_db)):
+    orden = db.query(OrdenServicio).options(
+        joinedload(OrdenServicio.recepciones),
+        joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente),
+    ).filter(OrdenServicio.id == orden_id).first()
+    if orden is None:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    return templates.TemplateResponse(request=request, name="ticket_inline.html", context={"ticket_orden": orden})
+
+
+@router.get("/{orden_id}/ticket.pdf")
+def descargar_ticket(orden_id: int, request: Request, db: Session = Depends(obtener_db)):
+    orden = db.query(OrdenServicio).options(
+        joinedload(OrdenServicio.recepciones),
+        joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente),
+    ).filter(OrdenServicio.id == orden_id).first()
+    if orden is None:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    html = templates.get_template("ticket_contenido.html").render(request=request, ticket_orden=orden)
+    numero = re.sub(r"[^A-Za-z0-9_-]", "_", orden.numero_orden or str(orden.id))
+    return Response(generar_ticket_pdf(html, numero), media_type="application/pdf", headers={
+        "Content-Disposition": f'attachment; filename="Ticket-{numero}.pdf"',
+        "Cache-Control": "no-store",
+    })
+
+
+@router.get("/{orden_id}/ticket/whatsapp")
+def whatsapp_ticket(orden_id: int, db: Session = Depends(obtener_db)):
+    orden = db.get(OrdenServicio, orden_id)
+    if orden is None:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    telefono = re.sub(r"\D", "", orden.equipo.cliente.telefono or "")
+    if re.fullmatch(r"9[0-9]{8}", telefono):
+        telefono = "51" + telefono
+    if not re.fullmatch(r"519[0-9]{8}", telefono):
+        raise HTTPException(status_code=400, detail="Revisa el celular peruano del cliente antes de abrir WhatsApp.")
+    mensaje = f"Hola, le compartimos el ticket de recepción {orden.numero_orden} de ServiTech. Gracias por su confianza."
+    return RedirectResponse("https://wa.me/" + telefono + "?" + urlencode({"text": mensaje}), status_code=303)

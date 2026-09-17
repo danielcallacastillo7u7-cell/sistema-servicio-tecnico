@@ -1,0 +1,52 @@
+            <article id="ticketImprimible" class="thermal-ticket">
+                <img class="ticket-logo" src="{{ url_for('static', path='/images/logo-ticket-servitech.png') }}"
+                    alt="Logo de ServiTech">
+                <header class="ticket-business-header">
+                    <p class="ticket-legal-name">A &amp; O SERVICIOS INFORMÁTICOS SOCIEDAD<br>COMERCIAL DE RESPONSABILIDAD LIMITADA</p>
+                    <h2 class="ticket-brand-name">SERVITECH</h2>
+                    <p class="ticket-address">CAL. AREQUIPA NRO. 584 C.P. AREQUIPA 584<br>AREQUIPA - ISLAY - MOLLENDO</p>
+                    <p>Cel. 922048201 - 912314022</p>
+                    <p>R.U.C. N.º 20611128291</p>
+                </header>
+                <div class="ticket-divider"></div>
+                <h2>ORDEN DE RECEPCIÓN</h2>
+                <p class="ticket-order">{{ ticket_orden.numero_orden }}</p>
+                <p>{{ (ticket_orden.fecha_ingreso|fecha_peru).strftime("%d/%m/%Y %I:%M %p") }}</p>
+                <div class="ticket-divider"></div>
+                <dl>
+                    <dt>CLIENTE</dt>
+                    <dd>{{ ticket_orden.equipo.cliente.nombres }} {{ ticket_orden.equipo.cliente.apellidos }}</dd>
+                    <dt>DNI/RUC</dt>
+                    <dd>{{ ticket_orden.equipo.cliente.dni_ruc }}</dd>
+                    <dt>CELULAR</dt>
+                    <dd>{{ ticket_orden.equipo.cliente.telefono }}</dd>
+                </dl>
+                <div class="ticket-divider"></div>
+                {% for equipo in ticket_orden.equipos_recibidos %}
+                <section class="ticket-equipo">
+                    <dl>
+                        <dt>TIPO</dt><dd>{{ equipo.tipo }}</dd>
+                        <dt>MARCA / MODELO</dt><dd>{{ equipo.marca }} / {{ equipo.modelo or "—" }}</dd>
+                        <dt>SERIE</dt><dd>{{ equipo.numero_serie or "Sin serie" }}</dd>
+                        <dt>ACCESORIOS</dt><dd>{{ equipo.accesorios or "Ninguno" }}</dd>
+                        <dt>OBSERVACIONES</dt><dd>{{ equipo.observaciones or "Sin observaciones" }}</dd>
+                    </dl>
+                </section>
+                <div class="ticket-divider"></div>
+                {% endfor %}
+                <dl>
+                    <dt>FALLA REPORTADA</dt>
+                    <dd>{{ ticket_orden.falla_reportada }}</dd>
+                    <dt>TÉCNICO</dt>
+                    <dd>{{ ticket_orden.tecnico_responsable }}</dd>
+                    <dt>ESTADO</dt>
+                    <dd>{{ ticket_orden.estado }}</dd>
+                </dl>
+                <div class="ticket-divider"></div>
+                <p class="pickup-notice"><strong>AVISO DE RECOJO</strong><br>Una vez terminada y comunicada la reparación de su equipo, el cliente tendrá
+                    hasta 2 semanas para recogerlo. En caso contrario, asumirá el costo de
+                    almacenamiento en nuestras instalaciones.
+                    Si transcurren más de 3 meses sin recoger el producto, este podrá entrar en
+                    remate para cubrir los gastos de reparación y almacenamiento.</p>
+                <p class="ticket-thanks">Gracias por confiar en ServiTech</p>
+            </article>

@@ -1,18 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Inicio | ServiTech{% endblock %}{% block page_title %}Panel principal{% endblock %}
 {% block page_subtitle %}<p class="page-subtitle">Bienvenido al sistema de gestión del taller</p>{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', path='/css/inicio.css') }}?v=20260908">{% endblock %}
+{% block header_extra %}
+<a class="home-total" href="/?estado=Todas">
+    <span class="home-mini-icon"><i class="bi bi-collection" aria-hidden="true"></i></span>
+    <span><strong>Todas las órdenes</strong><b>{{ total_ordenes }}</b><small>Registro completo</small></span>
+    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+</a>
+{% endblock %}
 {% block content %}
-<div class="row g-4 mb-4 dashboard-stats">
-    <div class="col-sm-6 col-xl-3"><a class="stat-card purple" href="/?estado=Todas">
-            <div class="stat-icon"><i class="bi bi-collection"></i></div>
-            <div><strong>Todas las órdenes</strong><span class="stat-number">{{ total_ordenes }}</span><small>Registro
-                    completo</small></div><i class="bi bi-chevron-right stat-arrow"></i>
-        </a></div>
-    <div class="col-sm-6 col-xl-3"><a class="stat-card dark" href="/?estado=Cancelado">
-            <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
-            <div><strong>Canceladas</strong><span class="stat-number">{{ total_canceladas }}</span><small>Registro de
-                    cancelaciones</small></div><i class="bi bi-chevron-right stat-arrow"></i>
-        </a></div>
+<div class="home-status-row mb-4">
     {% set tarjetas = [
     ('Recibidos', estados.recibidos, 'bi-envelope', 'red', 'Total de órdenes recibidas', 'Recibido'),
     ('Diagnosticados', estados.diagnosticados, 'bi-stethoscope', 'yellow', 'Con diagnóstico', 'Diagnosticado'),
@@ -20,12 +18,14 @@
     ('Listos', estados.listos, 'bi-check-circle', 'green', 'Listos para entregar', 'Listo para entrega')
     ] %}
     {% for etiqueta, valor, icono, tono, detalle, estado_tarjeta in tarjetas %}
-    <div class="col-sm-6 col-xl-3"><a class="stat-card {{ tono }}" href="/?estado={{ estado_tarjeta|urlencode }}">
-            <div class="stat-icon"><i class="bi {{ icono }}"></i></div>
-            <div><strong>{{ etiqueta }}</strong><span class="stat-number">{{ valor }}</span><small>{{ detalle }}</small>
-            </div><i class="bi bi-chevron-right stat-arrow"></i>
-        </a></div>
+    <a class="home-status home-{{ tono }}" href="/?estado={{ estado_tarjeta|urlencode }}">
+        <strong>{{ etiqueta }}</strong><span class="home-status-number">{{ valor }}</span><small>{{ detalle }}</small>
+    </a>
     {% endfor %}
+    <a class="home-canceled" href="/?estado=Cancelado">
+        <span class="home-mini-icon"><i class="bi bi-x-circle" aria-hidden="true"></i></span>
+        <span><strong>Canceladas</strong><b>{{ total_canceladas }}</b><small>Registro de cancelaciones</small></span>
+    </a>
 </div>
 <div class="card panel-card search-panel mb-4">
     <div class="card-body p-4">
@@ -58,7 +58,7 @@
                     {% for orden in ultimas_ordenes %}<tr>
                         <td><a href="/ordenes?ticket={{ orden.id }}">{{ orden.numero_orden }}</a></td>
                         <td>{{ orden.equipo.cliente.nombres }} {{ orden.equipo.cliente.apellidos }}</td>
-                        <td>{{ orden.equipo.tipo }} {{ orden.equipo.marca }}</td>
+                        <td>{% for equipo in orden.equipos_recibidos %}{{ equipo.tipo }} {{ equipo.marca }} {{ equipo.modelo or "" }}{% if not loop.last %} · {% endif %}{% endfor %}</td>
                         <td><span class="order-status">{{ orden.estado }}</span></td>
                         <td>{% if orden.diagnostico %}<details class="diagnosis-popover">
                                 <summary><i class="bi bi-eye"></i> Ver diagnóstico</summary>
@@ -93,12 +93,11 @@
         <div class="status-order-list">
             {% for orden in ordenes_estado %}<div class="status-order">
                 <div><strong>{{ orden.numero_orden }}</strong><span>{{ orden.equipo.cliente.nombres }} {{
-                        orden.equipo.cliente.apellidos }}</span><small>{{ orden.equipo.tipo }} {{ orden.equipo.marca }}
-                        {{ orden.equipo.modelo }}</small><small>Fecha: {{ orden.fecha_ingreso.strftime("%d/%m/%Y") }} ·
+                        orden.equipo.cliente.apellidos }}</span><small>{% for equipo in orden.equipos_recibidos %}{{ equipo.tipo }} {{ equipo.marca }} {{ equipo.modelo or "" }}{% if not loop.last %} · {% endif %}{% endfor %}</small><small>Fecha: {{ orden.fecha_ingreso.strftime("%d/%m/%Y") }} ·
                         Estado: {{ orden.estado }}</small></div>
                 <div>
                     {% if estado_seleccionado == 'Recibido' %}<a class="btn btn-sm btn-outline-primary"
-                        href="/diagnosticos">Realizar diagnóstico</a>
+                        href="/diagnosticos?orden_id={{ orden.id }}">Realizar diagnóstico</a>
                     {% elif estado_seleccionado == 'Diagnosticado' %}<form method="post"
                         action="/ordenes/{{ orden.id }}/estado-rapido"><input type="hidden" name="nuevo_estado"
                             value="En reparación"><button class="btn btn-sm btn-primary"

@@ -9,6 +9,7 @@ from app.models.cliente import Cliente
 from app.models.diagnostico import Diagnostico
 from app.models.equipo import Equipo
 from app.models.orden import OrdenServicio
+from app.models.orden_equipo import OrdenEquipo
 
 router = APIRouter(prefix="/api", tags=["Búsqueda"])
 HORA_PERU = timezone(timedelta(hours=-5))
@@ -29,7 +30,7 @@ def buscar(q: str = Query(min_length=2, max_length=100), db: Session = Depends(o
         .join(Equipo.cliente)
         .outerjoin(OrdenServicio.diagnostico)
         .options(
-            joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente),
+            joinedload(OrdenServicio.recepciones), joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente),
             joinedload(OrdenServicio.diagnostico),
         )
         .filter(
@@ -39,6 +40,10 @@ def buscar(q: str = Query(min_length=2, max_length=100), db: Session = Depends(o
                 Cliente.apellidos.ilike(patron),
                 Cliente.dni_ruc.ilike(patron),
                 Cliente.telefono.ilike(patron),
+                OrdenServicio.recepciones.any(or_(
+                    OrdenEquipo.numero_serie.ilike(patron), OrdenEquipo.marca.ilike(patron),
+                    OrdenEquipo.modelo.ilike(patron), OrdenEquipo.tipo.ilike(patron),
+                )),
                 Equipo.numero_serie.ilike(patron),
                 Equipo.marca.ilike(patron),
                 Equipo.modelo.ilike(patron),
@@ -56,7 +61,8 @@ def buscar(q: str = Query(min_length=2, max_length=100), db: Session = Depends(o
             "id": orden.id,
             "numero": orden.numero_orden,
             "cliente": f"{orden.equipo.cliente.nombres} {orden.equipo.cliente.apellidos}",
-            "equipo": f"{orden.equipo.tipo} {orden.equipo.marca}",
+            "equipo": " · ".join(f"{e.tipo} {e.marca} {e.modelo or ''}" for e in orden.equipos_recibidos),
+            "equipos": [dict(tipo=e.tipo, marca=e.marca, modelo=e.modelo, serie=e.numero_serie or "Sin serie", accesorios=e.accesorios or "Ninguno", observaciones=e.observaciones or "Sin observaciones") for e in orden.equipos_recibidos],
             "estado": orden.estado,
             "fecha": formatear_fecha_peru(orden.fecha_ingreso),
             "datos_cliente": {
