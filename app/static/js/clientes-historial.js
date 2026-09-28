@@ -4,9 +4,11 @@
     const html = valor => String(valor ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const equipoTexto = e => `${e.tipo} ${e.marca} ${e.modelo} · ${e.serie}`;
     const tareas = {};
+    let clientesVisibles = new Map(), clienteEditado = null, guardandoCliente = false;
     let paginaClientes = 1, paginaHistorial = 1, clienteId = null, ultimoBoton;
     let timerClientes, timerHistorial;
     let ultimaPendiente = true;
+    let modoClientes = "ordenes";
 
     async function consultar(tipo, url, mostrar) {
         tareas[tipo]?.abort();
@@ -37,13 +39,14 @@
 
     function clientes() {
         el('clientesFilas').replaceChildren();
-        return consultar('clientes', `/clientes/api?q=${encodeURIComponent(el('buscarClientes').value)}&pagina=${paginaClientes}`, datos => {
+        return consultar('clientes', `/clientes/api${modoClientes === "instalaciones" ? "/instalaciones" : ""}?q=${encodeURIComponent(el('buscarClientes').value)}&pagina=${paginaClientes}`, datos => {
+            clientesVisibles = new Map(datos.clientes.map(c => [String(c.id), c]));
             paginaClientes = datos.pagina;
             el('clientesMensaje').textContent = datos.total === 1 ? '1 cliente encontrado' : `${datos.total} clientes encontrados`;
             el('clientesFilas').innerHTML = datos.clientes.length ? datos.clientes.map(c => `<tr>
                 <td>${html(c.nombres)} ${html(c.apellidos)}</td><td>${html(c.dni_ruc)}</td><td>${html(c.telefono)}</td>
                 <td>${html(c.total_reparaciones)}</td><td>${c.ultima_reparacion ? `${html(c.ultima_reparacion.numero)}<br><small>${html(c.ultima_reparacion.fecha)} · ${html(c.ultima_reparacion.estado)}</small>` : 'Sin reparaciones'}</td>
-                <td><button class="btn btn-sm btn-outline-primary" type="button" data-cliente="${c.id}">Ver detalles</button></td>
+                <td><button class="btn btn-sm btn-outline-primary" type="button" data-cliente="${c.id}">Ver detalles</button> ${modoClientes === "ordenes" ? `<button class="btn btn-sm btn-outline-dark" type="button" data-editar-cliente="${c.id}">Editar</button>` : ""}</td>
             </tr>`).join('') : '<tr><td colspan="6">No hay clientes para esta búsqueda.</td></tr>';
         });
     }
@@ -57,7 +60,7 @@
             <details><summary class="text-primary" style="cursor:pointer">Ver detalles del equipo y reparación</summary>
                 ${o.equipos.map(e=>`<section class="border-bottom py-3"><strong>${html(equipoTexto(e))}</strong><p class="mb-1"><b>Accesorios recibidos:</b> ${html(e.accesorios)}</p><p class="mb-1"><b>Observaciones de recepción:</b> ${html(e.observaciones)}</p><button type="button" class="btn btn-sm btn-outline-secondary" data-equipo="${e.id}">Ver todas las atenciones de este equipo</button></section>`).join('')}
                 <p class="mt-3"><b>Técnico:</b> ${html(o.tecnico)}</p>
-                <h3 class="h6">Diagnóstico de la orden</h3>
+                <h3 class="h6">Diagnóstico de la orden</h3>${d ? `<button type="button" class="btn btn-sm btn-outline-primary mb-3" data-edit-diagnosis="${d.id}">Editar diagnóstico</button>` : ''}
                 ${d ? `<p><b>Falla encontrada:</b> ${html(d.falla)}</p><p><b>Solución recomendada:</b> ${html(d.solucion)}</p><p><b>Repuestos:</b> ${html(d.repuestos)}</p><p><b>Costo estimado:</b> S/ ${html(d.costo)}</p>
                 ${d.imagenes.length ? `<div class="d-flex flex-wrap gap-2">${d.imagenes.map(i=>`<a href="${html(i.url)}" target="_blank" rel="noopener"><img src="${html(i.url)}" alt="${html(i.nombre)}" loading="lazy" style="width:120px;height:100px;object-fit:cover"></a>`).join('')}</div>` : '<p class="text-secondary">Sin imágenes adjuntas.</p>'}` : '<p class="text-secondary">Pendiente de diagnóstico.</p>'}
                 <h3 class="h6 mt-3">Historial de estados</h3><ul>${o.historial.map(h=>`<li>${html(h.fecha)} — ${html(h.estado)}</li>`).join('') || '<li>Sin cambios registrados.</li>'}</ul>
@@ -68,6 +71,14 @@
 
     function historial(cargarEquipos=false) {
         if (clienteId === null) return;
+        if (modoClientes === 'instalaciones') {
+            el('historialOrdenes').replaceChildren();
+            return consultar('historial', `/clientes/api/instalaciones/${clienteId}/historial?pagina=${paginaHistorial}`, datos => {
+                paginaHistorial = datos.pagina;
+                el('historialMensaje').textContent = `${datos.total} instalaciones registradas`;
+                el('historialOrdenes').innerHTML = datos.instalaciones.map(i => `<article class="border rounded p-3 mb-3"><h3 class="h6">${html(i.numero)}</h3><p><b>Fecha programada:</b> ${html(i.fecha)}</p><p><b>Registrada:</b> ${html(i.registro)}</p><p><b>Técnico:</b> ${html(i.tecnico)}</p><p><b>Dirección:</b> ${html(i.direccion)}</p><a class="btn btn-outline-primary btn-sm" href="${html(i.url)}">Ver reporte de instalación</a></article>`).join('');
+            });
+        }
         el('historialOrdenes').replaceChildren();
         const params = new URLSearchParams({q:el('buscarHistorial').value,pagina:String(paginaHistorial)});
         if (el('historialEquipo').value) params.set('equipo_id',el('historialEquipo').value);
@@ -111,6 +122,17 @@
         clearTimeout(timerHistorial);
         el('buscarHistorial').value='';el('historialEquipo').innerHTML='<option value="">Todos los equipos</option>';
         el('historialTitulo').textContent='Historial del cliente';el('historialCliente').textContent='';el('historialResumen').textContent='';
+        const instalaciones = modoClientes === 'instalaciones';
+        el('ultimaReparacionTitulo').hidden = instalaciones;
+        el('ultimaReparacion').hidden = instalaciones;
+        el('historialFiltros').hidden = instalaciones;
+        el('resumenReparaciones').hidden = instalaciones;
+        if (instalaciones) {
+            const c = clientesVisibles.get(String(clienteId));
+            el('historialTitulo').textContent = `Instalaciones de ${c.nombres} ${c.apellidos}`;
+            el('historialCliente').textContent = `DNI/RUC: ${c.dni_ruc} · Teléfono: ${c.telefono}`;
+            el('todasReparaciones').hidden = false; el('todasReparaciones').open = true;
+        }
         el('clienteHistorial').hidden=false;historial(true);
         el('historialTitulo').focus();el('clienteHistorial').scrollIntoView({behavior:'smooth',block:'start'});
     });
@@ -124,5 +146,106 @@
         const details=event.target;if(!details.matches('details[data-ticket]')||!details.open)return;
         const frame=details.querySelector('iframe');if(!frame.getAttribute('src'))frame.src=details.dataset.ticket;frame.hidden=false;
     },true);
+
+    const editorDialog=el('editarClienteDialog');let editorOpener,docsPage=1,docsVersion=0;
+    function actualizarDocumentos(){const id=el('editorOrden').value;el('editorDocumentosAcciones').hidden=!id||hayCambios()||guardandoCliente;if(id){el('editorTicket').href=`/ordenes/${id}/ticket`;el('editorA4').href=`/ordenes/${id}/ticket.pdf`;}}
+    async function cargarDocumentos(reset=true){
+        if(!clienteEditado)return;const id=clienteEditado.id,version=++docsVersion;
+        if(reset){docsPage=1;el('editorOrden').replaceChildren();}el('editorOrden').disabled=true;el('editorMasOrdenes').disabled=true;el('editorDocumentosMensaje').textContent='Cargando órdenes…';
+        try{const r=await fetch(`/clientes/api/${id}/historial?pagina=${docsPage}`,{cache:'no-store'});if(!r.ok)throw new Error();const d=await r.json();if(version!==docsVersion||clienteEditado?.id!==id)return;
+        d.ordenes.forEach(o=>{const option=document.createElement('option');option.value=o.id;option.textContent=`${o.numero} · ${o.fecha}`;el('editorOrden').append(option);});el('editorOrden').disabled=!el('editorOrden').options.length;el('editorMasOrdenes').hidden=d.pagina>=d.paginas;el('editorMasOrdenes').disabled=false;el('editorDocumentosMensaje').textContent=d.total_ordenes?'':'Este cliente no tiene órdenes de servicio.';actualizarDocumentos();
+        }catch(_){if(version===docsVersion){el('editorDocumentosMensaje').textContent='No se pudieron cargar las órdenes. Cierra y vuelve a abrir el editor.';el('editorMasOrdenes').disabled=false;}}
+    }
+    el('editorOrden').addEventListener('change',actualizarDocumentos);
+    el('editorMasOrdenes').onclick=()=>{docsPage++;cargarDocumentos(false);};
+    editorDialog.addEventListener('cancel',e=>{e.preventDefault();if(!guardandoCliente&&(!hayCambios()||confirm('¿Descartar los cambios sin guardar?')))cerrarEditor();});
+    const camposCliente = {nombres:'editarClienteNombres',apellidos:'editarClienteApellidos',dni_ruc:'editarClienteDocumento',telefono:'editarClienteTelefono'};
+    function limpiarErroresCliente() {
+        el('editarClienteForm').closest('.client-editor').classList.remove('client-editor-error');
+        el('editorClienteMensaje').classList.remove('client-error-message');
+        for(const id of Object.values(camposCliente)) {
+            el(id).classList.remove('is-invalid');el(id).removeAttribute('aria-invalid');el(id).removeAttribute('aria-describedby');
+        }
+    }
+    function mostrarErrorCliente(mensaje, campos=[]) {
+        el('editarClienteForm').closest('.client-editor').classList.add('client-editor-error');
+        el('editorClienteMensaje').classList.add('client-error-message');
+        el('editorClienteMensaje').textContent=mensaje;
+        for(const campo of campos) {
+            const input=el(camposCliente[campo]);if(!input)continue;
+            input.classList.add('is-invalid');input.setAttribute('aria-invalid','true');input.setAttribute('aria-describedby','editorClienteMensaje');
+        }
+    }
+    el('editarClienteForm').addEventListener('input',()=>{
+        limpiarErroresCliente();el('editorClienteMensaje').textContent='';el('guardarCliente').textContent='Guardar cambios';actualizarDocumentos();
+    });
+    el('editarClienteForm').addEventListener('invalid',e=>{
+        const campo=Object.keys(camposCliente).find(k=>camposCliente[k]===e.target.id);
+        mostrarErrorCliente(e.target.validationMessage,campo?[campo]:[]);
+    },true);
+    const valoresEditor = () => Object.fromEntries(Object.entries(camposCliente).map(([k,id])=>[k,el(id).value]));
+    const hayCambios = () => clienteEditado && Object.entries(valoresEditor()).some(([k,v])=>v!==clienteEditado[k]);
+    function cerrarEditor() {
+        docsVersion++;editorDialog.close();document.body.style.overflow='';editorOpener?.focus();limpiarErroresCliente();clienteEditado=null;el('editarClienteForm').hidden=true;el('editorClienteVacio').hidden=false;
+        el('editorClienteMensaje').textContent='';
+    }
+    el('clientesFilas').addEventListener('click',e=>{
+        const boton=e.target.closest('[data-editar-cliente]');if(!boton||guardandoCliente)return;
+        if(hayCambios()&&!confirm('¿Descartar los cambios sin guardar?'))return;
+        limpiarErroresCliente();clienteEditado={...clientesVisibles.get(boton.dataset.editarCliente)};
+        for(const [k,id] of Object.entries(camposCliente))el(id).value=clienteEditado[k];
+        el('editorClienteNombre').textContent=`${clienteEditado.nombres} ${clienteEditado.apellidos}`;
+        el('editorClienteMensaje').textContent='';el('editarClienteForm').hidden=false;el('editorClienteVacio').hidden=true;
+        editorOpener=boton;el('guardarCliente').textContent='Guardar cambios';el('editorDocumentosAcciones').hidden=true;editorDialog.showModal();document.body.style.overflow='hidden';cargarDocumentos();el('editarClienteNombres').focus();
+    });
+    el('cancelarEditarCliente').addEventListener('click',()=>{if(!guardandoCliente&&(!hayCambios()||confirm('¿Descartar los cambios sin guardar?')))cerrarEditor();});
+    window.addEventListener('beforeunload',e=>{if(hayCambios()){e.preventDefault();e.returnValue='';}});
+    el('editarClienteForm').addEventListener('submit',async e=>{
+        e.preventDefault();if(!clienteEditado||guardandoCliente)return;
+        const datos=valoresEditor(), original=Object.fromEntries(Object.keys(camposCliente).map(k=>[k,clienteEditado[k]]));
+        limpiarErroresCliente();let campoError=null;
+        guardandoCliente=true;el('guardarCliente').disabled=true;el('cancelarEditarCliente').disabled=true;
+        for(const id of Object.values(camposCliente))el(id).disabled=true;
+        el('editorClienteMensaje').textContent='Guardando…';el('guardarCliente').textContent='Verificando…';actualizarDocumentos();
+        try {
+            const r=await fetch(`/clientes/api/${clienteEditado.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...datos,original})});
+            const resultado=await r.json();
+            if(!r.ok){
+                const mensaje=typeof resultado.detail==='string'?resultado.detail:'Revisa los datos del formulario.';
+                let campos=[];
+                if(Array.isArray(resultado.detail))campos=resultado.detail.map(d=>d.loc?.[d.loc.length-1]).filter(k=>camposCliente[k]);
+                else if(/DNI|RUC/i.test(mensaje))campos=['dni_ruc'];
+                else if(/celular|teléfono/i.test(mensaje))campos=['telefono'];
+                else if(/nombres|apellidos/i.test(mensaje))campos=['nombres','apellidos'];
+                const error=new Error(mensaje);error.campos=campos;throw error;
+            }
+            clienteEditado=resultado.cliente;
+            for(const [k,id] of Object.entries(camposCliente))el(id).value=clienteEditado[k];
+            el('editorClienteNombre').textContent=`${clienteEditado.nombres} ${clienteEditado.apellidos}`;
+            el('editorClienteMensaje').textContent='✓ Datos verificados y guardados.';el('guardarCliente').textContent='✓ Guardado';
+            window.ServiConfirm?.show('Información del cliente actualizada.');
+            await clientes();
+            if(clienteId===clienteEditado.id){ultimaPendiente=true;await historial();}
+        }catch(error){el('guardarCliente').textContent='Guardar cambios';mostrarErrorCliente(error.message||'No se pudo guardar. Inténtalo nuevamente.',error.campos||[]);campoError=camposCliente[error.campos?.[0]];}
+        finally{guardandoCliente=false;el('guardarCliente').disabled=false;el('cancelarEditarCliente').disabled=false;for(const id of Object.values(camposCliente))el(id).disabled=false;if(campoError)el(campoError).focus();actualizarDocumentos();}
+    });
+    document.querySelectorAll('[data-clientes-modo]').forEach(boton => boton.addEventListener('click', () => {
+        if (boton.dataset.clientesModo === modoClientes) return;
+        modoClientes = boton.dataset.clientesModo;
+        clearTimeout(timerClientes); clearTimeout(timerHistorial);
+        tareas.historial?.abort(); tareas.historial = null; clienteId = null;
+        el('clienteHistorial').hidden = true; paginaClientes = 1;
+        const instalaciones = modoClientes === 'instalaciones';
+        el('clientesTipoTitulo').textContent = instalaciones ? 'Clientes de instalaciones de cámaras' : 'Clientes de órdenes de servicio';
+        el('clientesCantidadTitulo').textContent = instalaciones ? 'Instalaciones' : 'Reparaciones';
+        el('clientesUltimaTitulo').textContent = instalaciones ? 'Última instalación registrada' : 'Última reparación';
+        document.querySelectorAll('[data-clientes-modo]').forEach(b => {
+            const activo = b.dataset.clientesModo === modoClientes;
+            b.setAttribute('aria-pressed', String(activo));
+
+        });
+        document.querySelector('.clients-mode-slider').classList.toggle('is-installations', instalaciones);
+        clientes();
+    }));
     clientes();
 })();

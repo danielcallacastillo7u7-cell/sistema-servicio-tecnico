@@ -36,7 +36,9 @@
                 {% endfor %}
                 <dl>
                     <dt>FALLA REPORTADA</dt>
-                    <dd>{{ ticket_orden.falla_reportada }}</dd>
+                    <dd>{{ ticket_orden.falla_reportada or 'No indicada' }}</dd>
+                    {% if ticket_orden.otro_producto_servicio %}<dt>OTRO PRODUCTO O SERVICIO</dt><dd>{{ ticket_orden.otro_producto_servicio }}</dd>{% endif %}
+                    <dt>SERVICIO A DOMICILIO</dt><dd>{{ 'Sin especificar' if ticket_orden.servicio_domicilio is none else ('Sí' if ticket_orden.servicio_domicilio else 'No') }}</dd>
                     <dt>TÉCNICO</dt>
                     <dd>{{ ticket_orden.tecnico_responsable }}</dd>
                     <dt>ESTADO</dt>

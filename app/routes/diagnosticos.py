@@ -1,3 +1,4 @@
+from app.services.confirmaciones import redireccion_confirmada
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from urllib.parse import quote
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import obtener_db
 from app.models.diagnostico import Diagnostico, DiagnosticoImagen, DiagnosticoMensaje
+from app.models.cancelacion import CancelacionOrden
 from app.models.equipo import Equipo
 from app.models.orden import OrdenServicio
 
@@ -73,6 +75,16 @@ def numero_whatsapp(telefono: str) -> str:
 
 
 def contexto_diagnosticos(db: Session, error: str | None = None, orden_seleccionada_id: int | None = None):
+    cancelaciones = (
+        db.query(CancelacionOrden)
+        .options(
+            joinedload(CancelacionOrden.orden)
+            .joinedload(OrdenServicio.equipo)
+            .joinedload(Equipo.cliente)
+        )
+        .order_by(CancelacionOrden.id.desc())
+        .all()
+    )
     ordenes_pendientes = (
         db.query(OrdenServicio)
         .options(joinedload(OrdenServicio.recepciones), joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente))
@@ -100,6 +112,7 @@ def contexto_diagnosticos(db: Session, error: str | None = None, orden_seleccion
                 "url_whatsapp": f"https://wa.me/{numero_whatsapp(telefono)}?text={quote(diagnostico.mensaje_cliente.mensaje)}",
             }
     return {
+        "cancelaciones": cancelaciones,
         "ordenes_pendientes": ordenes_pendientes,
         "orden_seleccionada_id": orden_seleccionada_id,
         "diagnosticos": diagnosticos,
@@ -219,7 +232,7 @@ def registrar_diagnostico(
             status_code=409,
         )
 
-    return RedirectResponse(url="/diagnosticos", status_code=303)
+    return redireccion_confirmada("/diagnosticos", "Diagnóstico guardado correctamente.")
 
 
 @router.get("/api/{diagnostico_id}")
@@ -276,7 +289,7 @@ def preparar_mensaje(diagnostico_id: int, db: Session = Depends(obtener_db)):
     if diagnostico.mensaje_cliente is None:
         db.add(DiagnosticoMensaje(diagnostico_id=diagnostico.id, mensaje=crear_mensaje_cliente(diagnostico), estado="Pendiente"))
         db.commit()
-    return RedirectResponse(url="/diagnosticos", status_code=303)
+    return redireccion_confirmada("/diagnosticos", "Mensaje preparado correctamente.")
 
 
 @router.post("/{diagnostico_id}/mensaje/estado")
@@ -292,7 +305,7 @@ def cambiar_estado_mensaje(
         raise HTTPException(status_code=404, detail="Mensaje no encontrado")
     mensaje.estado = estado
     db.commit()
-    return RedirectResponse(url="/diagnosticos", status_code=303)
+    return redireccion_confirmada("/diagnosticos", "Estado del mensaje actualizado.")
 
 
 @router.get("/imagenes/{imagen_id}")

@@ -3,35 +3,6 @@
 {% block page_subtitle %}<p class="page-subtitle">Configuración y registros administrativos</p>{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<div class="row g-4 mb-4">
-    <div class="col-md-4">
-        <div class="card panel-card h-100">
-            <div class="card-body p-4">
-                <h2 class="section-title"><i class="bi bi-building"></i> Empresa</h2>
-                <p class="text-secondary">Datos, dirección y teléfono del negocio.</p><span
-                    class="badge text-bg-secondary">Próximamente</span>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card panel-card h-100">
-            <div class="card-body p-4">
-                <h2 class="section-title"><i class="bi bi-printer"></i> Impresión</h2>
-                <p class="text-secondary">Configuración del comprobante y etiquetadora.</p><span
-                    class="badge text-bg-secondary">Próximamente</span>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card panel-card h-100">
-            <div class="card-body p-4">
-                <h2 class="section-title"><i class="bi bi-people"></i> Usuarios</h2>
-                <p class="text-secondary">Administradores, recepción y técnicos.</p><span
-                    class="badge text-bg-secondary">Próximamente</span>
-            </div>
-        </div>
-    </div>
-</div>
 <div class="card panel-card mb-4">
     <div class="card-body p-4">
         <h2 class="section-title"><i class="bi bi-person-badge"></i> Trabajadores</h2>
@@ -59,36 +30,6 @@
                 </details>
             </div>{% else %}<div class="alert alert-warning mb-0">Todavía no hay trabajadores. Agrega al menos uno antes
                 de crear una orden.</div>{% endfor %}</div>
-    </div>
-</div>
-<div class="card panel-card">
-    <div class="card-body p-4">
-        <h2 class="section-title"><i class="bi bi-archive"></i> Órdenes canceladas</h2>
-        <p class="text-secondary">Se conservan para no perder el historial del cliente y del equipo.</p>
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th>Orden</th>
-                        <th>Cliente</th>
-                        <th>Motivo</th>
-                        <th>Detalle</th>
-                        <th>Fecha</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in cancelaciones %}<tr>
-                        <td><a href="/ordenes?ticket={{ item.orden.id }}">{{ item.orden.numero_orden }}</a></td>
-                        <td>{{ item.orden.equipo.cliente.nombres }} {{ item.orden.equipo.cliente.apellidos }}</td>
-                        <td>{{ item.motivo }}</td>
-                        <td>{{ item.detalle or "—" }}</td>
-                        <td>{{ item.fecha.strftime("%d/%m/%Y %H:%M") }}</td>
-                    </tr>{% else %}<tr>
-                        <td colspan="5">No hay órdenes canceladas.</td>
-                    </tr>{% endfor %}
-                </tbody>
-            </table>
-        </div>
     </div>
 </div>
 {% endblock %}

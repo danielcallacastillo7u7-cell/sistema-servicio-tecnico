@@ -1,3 +1,4 @@
+from app.services.confirmaciones import redireccion_confirmada
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import hmac
@@ -212,8 +213,12 @@ async def registrar_orden(request: Request, db: Session = Depends(obtener_db)):
         return error("El DNI debe tener 8 dígitos o el RUC 11 dígitos.")
     if not re.fullmatch(r"9[0-9]{8}", telefono):
         return error("El celular peruano debe comenzar con 9 y tener 9 dígitos.")
-    if not falla:
-        return error("La falla indicada por el cliente es obligatoria.")
+    otro = valores.get("otro_producto_servicio", "").strip()
+    domicilio = valores.get("servicio_domicilio", "no")
+    if len(falla) > 3000 or len(otro) > 3000:
+        return error("La falla y el otro producto o servicio admiten hasta 3000 caracteres.")
+    if domicilio not in ("si", "no"):
+        return error("Selecciona Sí o No en servicio técnico a domicilio.")
     if not db.query(Trabajador).filter(Trabajador.nombre == tecnico, Trabajador.activo.is_(True)).first():
         return error("Selecciona un técnico responsable registrado.")
     try:
@@ -254,7 +259,7 @@ async def registrar_orden(request: Request, db: Session = Depends(obtener_db)):
 
         orden = OrdenServicio(
             equipo_id=recibidos[0].equipo_id, recepciones=recibidos,
-            falla_reportada=falla, tecnico_responsable=tecnico, estado="Recibido",
+            falla_reportada=falla, otro_producto_servicio=otro, servicio_domicilio=domicilio == "si", tecnico_responsable=tecnico, estado="Recibido",
         )
         db.add(orden)
         db.flush()
@@ -275,7 +280,7 @@ async def registrar_orden(request: Request, db: Session = Depends(obtener_db)):
         raise
     if individual:
         return respuesta_equipo(orden)
-    return RedirectResponse(url=f"/ordenes?ticket={orden.id}", status_code=303)
+    return redireccion_confirmada(f"/ordenes?ticket={orden.id}", "Orden guardada correctamente.")
 
 
 @router.post("/{orden_id}/cancelar")
@@ -310,7 +315,7 @@ def cancelar_orden(
     db.add(HistorialEstado(orden_id=orden.id, estado="Cancelado"))
     db.commit()
 
-    return RedirectResponse(url="/ordenes", status_code=303)
+    return redireccion_confirmada("/ordenes", "Orden cancelada. Historial actualizado.")
 
 
 @router.post("/{orden_id}/eliminar")
@@ -338,7 +343,7 @@ def eliminar_orden(
     db.delete(orden)
     db.commit()
 
-    return RedirectResponse(url="/ordenes", status_code=303)
+    return redireccion_confirmada("/ordenes", "Orden eliminada correctamente.")
 
 
 @router.post("/{orden_id}/estado-rapido")
@@ -363,7 +368,7 @@ def cambiar_estado_rapido(
     db.add(HistorialEstado(orden_id=orden.id, estado=nuevo_estado))
     db.commit()
 
-    return RedirectResponse(url=f"/?estado={nuevo_estado}", status_code=303)
+    return redireccion_confirmada(f"/?estado={nuevo_estado}", "Estado de la orden actualizado.")
 
 
 @router.get("/{orden_id}/comprobante")

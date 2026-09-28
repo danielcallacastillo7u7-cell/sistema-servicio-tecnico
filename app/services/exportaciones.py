@@ -96,6 +96,8 @@ def sincronizar_google_sheets(filas: list[dict], referencia: str = "", nombre_ho
     credenciales = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
     spreadsheet_id = extraer_spreadsheet_id(referencia or os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID", ""))
     nombre_hoja = (nombre_hoja or os.getenv("GOOGLE_SHEETS_WORKSHEET", "Exportaciones")).strip()
+    if nombre_hoja.startswith("Órdenes - "):
+        raise ValueError("Las pestañas mensuales se actualizan automáticamente. Usa otra pestaña para exportaciones manuales.")
     if not nombre_hoja:
         raise ValueError("Indica el nombre de la pestaña de Google Sheets.")
     if not credenciales:

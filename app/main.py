@@ -8,6 +8,7 @@ from sqlalchemy import func, text
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import Base, engine, obtener_db
+from app.models.instalacion import InstalacionCamara
 from app.models.cliente import Cliente
 from app.models.cancelacion import CancelacionOrden
 from app.models.diagnostico import Diagnostico
@@ -17,8 +18,9 @@ from app.models.historial import HistorialEstado
 from app.models.orden import OrdenServicio
 from app.models.orden_equipo import OrdenEquipo
 from app.models.solicitud_equipo import SolicitudEquipo
-from app.migraciones import migrar_equipos_orden
+from app.migraciones import migrar_equipos_orden, migrar_detalles_servicio
 from app.models.trabajador import Trabajador
+from app.routes.camaras import router as camaras_router
 from app.routes.clientes import router as clientes_router
 from app.routes.busqueda import router as busqueda_router
 from app.routes.ajustes import router as ajustes_router
@@ -29,13 +31,26 @@ from app.routes.exportaciones import router as exportaciones_router
 
 BASE_DIR = Path(__file__).resolve().parent
 
-app = FastAPI(title="ServiTech")
+from contextlib import asynccontextmanager
+from app.services.sheets_automatico import iniciar, detener
+
+@asynccontextmanager
+async def lifespan(app):
+    iniciar()
+    try:
+        yield
+    finally:
+        detener()
+
+app = FastAPI(title="ServiTech", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
 # Crea en PostgreSQL local las tablas de los modelos importados.
 Base.metadata.create_all(bind=engine)
 migrar_equipos_orden(engine)
+migrar_detalles_servicio(engine)
 
+app.include_router(camaras_router)
 app.include_router(clientes_router)
 app.include_router(ajustes_router)
 app.include_router(busqueda_router)
@@ -120,6 +135,7 @@ def inicio(
             "seccion": "inicio",
             "estados": estados,
             "total_ordenes": total_ordenes,
+            "total_instalaciones": db.query(func.count(InstalacionCamara.id)).scalar() or 0,
             "total_canceladas": total_canceladas,
             "ultimas_ordenes": ultimas_ordenes,
             "estado_seleccionado": estado if estado in estados_panel_validos else None,

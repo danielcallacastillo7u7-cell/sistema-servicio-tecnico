@@ -1,28 +1,30 @@
 {% extends "base.html" %}
 {% block title %}Órdenes | ServiTech{% endblock %}{% block page_title %}Nueva orden de servicio{% endblock %}
 {% block page_subtitle %}<p class="page-subtitle">Completa el cliente una vez y guarda cada equipo con su propio ticket</p>{% endblock %}
+{% block header_extra %}{% include 'servicios_selector.html' %}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/orden-formulario.css?v=1">{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<div class="card panel-card mb-4">
-    <div class="card-body p-4">
+<div class="order-form-shell mb-4">
+    <div class="order-form-body">
         <form id="ordenForm" method="post" action="/ordenes" autocomplete="off" novalidate>
-            <h2 class="section-title"><i class="bi bi-person"></i> Datos del cliente</h2>
+            <section class="order-form-panel"><h2 class="section-title"><i class="bi bi-person"></i> Datos del cliente</h2><p class="order-section-help">Información de la persona que solicita el servicio.</p>
             <div id="datosCliente" class="row g-3">
-                <div class="col-md-6"><label class="form-label">Nombres <span class="required">*</span></label><input
-                        name="nombres" class="form-control solo-letras" minlength="2" maxlength="100" required></div>
-                <div class="col-md-6"><label class="form-label">Apellidos <span class="required">*</span></label><input
-                        name="apellidos" class="form-control solo-letras" minlength="2" maxlength="100" required></div>
                 <div class="col-md-6"><label class="form-label">DNI o RUC <span class="required">*</span></label><input
-                        name="dni_ruc" class="form-control solo-numeros" inputmode="numeric" minlength="8"
+                        name="dni_ruc" placeholder="Ej. 12345678 o 20123456789" class="form-control solo-numeros" inputmode="numeric" minlength="8"
                         maxlength="11" pattern="(?:[0-9]{8}|[0-9]{11})" required><small class="form-text">DNI: 8 dígitos
                         · RUC: 11 dígitos.</small></div>
                 <div class="col-md-6"><label class="form-label">Celular <span class="required">*</span></label><input
                         name="telefono" class="form-control solo-numeros" inputmode="numeric" minlength="9"
                         maxlength="9" pattern="9[0-9]{8}" placeholder="9XXXXXXXX" required></div>
+                <div class="col-md-6"><label class="form-label">Nombres <span class="required">*</span></label><input
+                        name="nombres" placeholder="Ej. Juan Carlos" class="form-control solo-letras" minlength="2" maxlength="100" required></div>
+                <div class="col-md-6"><label class="form-label">Apellidos <span class="required">*</span></label><input
+                        name="apellidos" placeholder="Ej. Pérez García" class="form-control solo-letras" minlength="2" maxlength="100" required></div>
             </div>
             <p id="documentoEstado" class="form-text mt-3" role="status" aria-live="polite">Ingresa el DNI o RUC para buscar al cliente.</p>
             <div class="row g-3 mt-2">
-                <div class="col-md-6"><label for="tecnicoResponsable" class="form-label">Técnico responsable <span
+                <div class="col-12"><label for="tecnicoResponsable" class="form-label">Técnico responsable <span
                             class="required">*</span></label><select id="tecnicoResponsable" name="tecnico_responsable" class="form-select"
                         required>
                         <option value="">Selecciona un técnico</option>{% for trabajador in trabajadores %}<option
@@ -30,17 +32,17 @@
                     </select>{% if not trabajadores %}<small class="form-text text-danger">Primero agrega un trabajador
                         en Ajustes.</small>{% endif %}</div>
             </div>
-            <hr class="my-4">
-            <h2 class="section-title"><i class="bi bi-pc-display"></i> Datos del equipo</h2>
-            <p id="cantidadEquipos" class="text-secondary" aria-live="polite">Equipos recibidos: 1</p>
+            </section>
+            <div class="order-equipment-toolbar"><span id="cantidadEquipos" class="text-secondary" aria-live="polite">Equipos recibidos: 1</span><button id="agregarEquipo" type="button" class="btn btn-outline-primary">+ Agregar equipo</button></div>
             <div id="equiposContenedor">
-                <section class="equipo-bloque mb-4" aria-label="Equipo 1">
+                <section class="equipo-bloque mb-4" aria-label="Equipo 1"><div class="order-form-panel">
+<h2 class="section-title"><i class="bi bi-pc-display"></i> Datos del equipo</h2><p class="order-section-help">Información del equipo a revisar.</p>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h3 class="h6 mb-0 equipo-numero">Equipo 1</h3>
                         <button type="button" class="btn btn-sm btn-outline-danger quitar-equipo" hidden>Quitar equipo</button>
                     </div>
             <div class="row g-3">
-                <div class="col-md-6"><label class="form-label">Tipo <span class="required">*</span></label><select
+                <div class="col-md-4"><label class="form-label">Tipo <span class="required">*</span></label><select
                         id="tipoEquipo" name="tipo" class="form-select" required>
                         <option value="">Selecciona una opción</option>
                         <option>Laptop</option>
@@ -48,35 +50,35 @@
                         <option>CPU</option>
                         <option>Otro</option>
                     </select></div>
-                <div id="tipoOtroGrupo" class="col-md-6 conditional-field" hidden><label class="form-label">Especificar
+                <div id="tipoOtroGrupo" class="col-md-4 conditional-field" hidden><label class="form-label">Especificar
                         otro equipo <span class="required">*</span></label><input id="tipoOtro" name="tipo_otro"
                         class="form-control" maxlength="80"></div>
-                <div class="col-md-6"><label class="form-label">Marca <small>(opcional)</small></label><input
-                        name="marca" class="form-control" maxlength="80"></div>
-                <div class="col-md-6"><label class="form-label">Modelo <span class="required">*</span></label><input
-                        name="modelo" class="form-control" maxlength="100" required></div>
-                <div class="col-md-6"><label class="form-label">Número de serie <small>(opcional)</small></label><input
-                        name="numero_serie" class="form-control" maxlength="100"></div>
-                <div class="col-md-6"><label class="form-label">Accesorios <span
+                <div class="col-md-4"><label class="form-label">Marca <small>(opcional)</small></label><input
+                        name="marca" placeholder="Ej. HP, Lenovo, Samsung" class="form-control" maxlength="80"></div>
+                <div class="col-md-4"><label class="form-label">Modelo <span class="required">*</span></label><input
+                        name="modelo" placeholder="Ej. Pavilion 15, ThinkPad X1" class="form-control" maxlength="100" required></div>
+                <div class="col-md-4"><label class="form-label">Accesorios <span
                             class="required">*</span></label><select id="accesorioOpcion" name="accesorio_opcion"
                         class="form-select" required>
                         <option value="">Selecciona una opción</option>
                         <option>Ninguno</option>
                         <option>Especificar</option>
                     </select></div>
-                <div id="accesoriosDetalleGrupo" class="col-md-6 conditional-field" hidden><label
+                <div class="col-md-4"><label class="form-label">Número de serie <small>(opcional)</small></label><input
+                        name="numero_serie" placeholder="Ej. ABC123456" class="form-control" maxlength="100"></div>
+                <div id="accesoriosDetalleGrupo" class="col-md-4 conditional-field" hidden><label
                         class="form-label">Especificar accesorios <span class="required">*</span></label><textarea
                         id="accesoriosDetalle" name="accesorios_detalle" class="form-control"
                         maxlength="500"></textarea></div>
-                <div class="col-md-6"><label class="form-label">Observaciones <small>(opcional)</small></label><textarea
-                        name="observaciones" class="form-control" maxlength="1000"></textarea></div>
+                <div class="col-md-4"><label class="form-label">Observaciones <small>(opcional)</small></label><textarea
+                        name="observaciones" placeholder="Detalles adicionales del equipo…" class="form-control" maxlength="1000"></textarea></div>
             </div>
-            <hr class="my-3">
-            <h2 class="section-title"><i class="bi bi-file-earmark-text"></i> Atención de este equipo</h2>
+            </div><div class="order-form-panel order-problem-panel">
+            <h2 class="section-title"><i class="bi bi-file-earmark-text"></i> Problema / servicio solicitado</h2><p class="order-section-help">Describe la falla reportada por el cliente.</p>
             <div class="row g-3">
-                <div class="col-12"><label class="form-label">Falla indicada por el cliente <span
-                            class="required">*</span></label><textarea name="falla_reportada" class="form-control"
-                        rows="3" required></textarea></div>
+                <div class="col-12"><label class="form-label">Falla indicada por el cliente (opcional)</label><textarea name="falla_reportada" placeholder="Describe la falla o problema reportado…" class="form-control"
+                        rows="3" maxlength="3000"></textarea></div>
+                <div class="col-12 productos-equipo"><label class="form-label">Productos adicionales vendidos <small>(opcional)</small></label><input type="hidden" name="otro_producto_servicio"><div class="productos-equipo-filas"></div><button type="button" class="btn btn-sm btn-outline-primary agregar-producto-equipo mt-2">+ Agregar producto</button></div>
 
             </div>
                     <div class="equipo-acciones mt-3 d-flex flex-wrap gap-2 align-items-center">
@@ -89,9 +91,9 @@
                         <button type="button" class="btn btn-sm btn-outline-dark imprimir-equipo my-2" disabled>Imprimir ticket</button>
                         <iframe class="ticket-iframe" title="Ticket del equipo" hidden></iframe>
                     </details>
-                </section>
+                </div></section>
             </div>
-            <button id="agregarEquipo" type="button" class="btn btn-outline-primary">+ Agregar otro equipo</button>
+
             <script id="formularioPrevio" type="application/json">{{ (formulario_previo or {})|tojson }}</script>
         </form>
     </div>

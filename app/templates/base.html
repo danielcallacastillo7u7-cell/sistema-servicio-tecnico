@@ -11,7 +11,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}?v=cliente-dni-20260908">
     {% block extra_head %}{% endblock %}
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/interface.css') }}?v=editor-modal-20260927">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/confirmaciones.css') }}?v=top-2">
+    <script src="{{ url_for('static', path='/js/confirmaciones.js') }}?v=dialog-3"></script>
+<link rel="stylesheet" href="/static/css/reporte-instalacion.css?v=carta-2"><script src="/static/js/reporte-instalacion.js?v=1"></script><link rel="stylesheet" href="/static/css/servicios-selector.css?v=1"></head>
 <body><div class="app-layout">
 <aside class="sidebar">
     <a class="brand brand-logo" href="/">
@@ -21,7 +24,7 @@
     <nav class="nav flex-column gap-2">
         <a class="nav-link {% if seccion == 'inicio' %}active{% endif %}" href="/"><i class="bi bi-house-door"></i> Inicio</a>
         <a class="nav-link {% if seccion == 'clientes' %}active{% endif %}" href="/clientes"><i class="bi bi-people"></i> Clientes</a>
-        <a class="nav-link {% if seccion == 'ordenes' %}active{% endif %}" href="/ordenes"><i class="bi bi-file-earmark-text"></i> Órdenes</a>
+        <a class="nav-link {% if seccion in ['ordenes', 'camaras'] %}active{% endif %}" href="/ordenes"><i class="bi bi-file-earmark-text"></i> Servicios</a>
         <a class="nav-link {% if seccion == 'diagnosticos' %}active{% endif %}" href="/diagnosticos"><i class="bi bi-activity"></i> Diagnósticos <span id="diagnosticoAlerta" class="menu-alert" hidden>0</span></a>
         <a class="nav-link {% if seccion == 'exportaciones' %}active{% endif %}" href="/exportaciones"><i class="bi bi-file-earmark-spreadsheet"></i> Exportaciones</a>
         <a class="nav-link {% if seccion == 'ajustes' %}active{% endif %}" href="/ajustes"><i class="bi bi-gear"></i> Ajustes</a>
@@ -29,9 +32,19 @@
     <div class="sidebar-footer"><div><span class="status-dot"></span>Base de datos conectada</div><small>Servidor <span class="online">en línea</span></small></div>
 </aside>
 <main class="main-content">
-    <header class="topbar"><div><p class="eyebrow">SISTEMA DE SERVICIO TÉCNICO</p><h1>{% block page_title %}ServiTech{% endblock %}</h1>{% block page_subtitle %}{% endblock %}</div>{% block header_extra %}{% endblock %}</header>
+    {% if seccion == 'inicio' %}
+    <div class="utility-bar">
+        <div class="utility-search">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input id="buscadorGlobal" type="search" aria-label="Buscar órdenes, clientes o equipos" placeholder="Buscar órdenes, clientes o equipos…" autocomplete="off">
+            <div id="resultadosBusqueda" class="search-results" aria-live="polite"></div>
+        </div>
+        <span class="utility-account">SERVITECH <i class="bi bi-person-circle" aria-hidden="true"></i></span>
+    </div>
+    {% endif %}
+    <header class="topbar"><div><p class="eyebrow">{% if seccion == 'inicio' %}Bienvenido, Usuario{% else %}Sistema de servicio técnico{% endif %}</p><h1>{% block page_title %}ServiTech{% endblock %}</h1>{% block page_subtitle %}{% endblock %}</div>{% block header_extra %}{% endblock %}</header>
     <section class="content-area">{% block content %}{% endblock %}</section>
     <footer class="app-footer">© 2026 <strong>ServiTech</strong> · Sistema de Servicio Técnico</footer>
 </main>
-</div><script src="{{ url_for('static', path='/js/app.js') }}?v=multi-equipo-20260908"></script><script src="{{ url_for('static', path='/js/cliente-documento.js') }}?v=20260908"></script><script src="{{ url_for('static', path='/js/orden-equipos.js') }}?v=inicio-lan-20260917"></script></body>
+</div><script src="{{ url_for('static', path='/js/app.js') }}?v=confirmacion-20260926"></script><script src="{{ url_for('static', path='/js/cliente-documento.js') }}?v=confirmacion-20260926"></script><script src="{{ url_for('static', path='/js/orden-equipos.js') }}?v=productos-multiples-20260928"></script></body>
 </html>

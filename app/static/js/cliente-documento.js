@@ -35,6 +35,7 @@
                 form.dataset.clienteRegistrado = String(encontrado);
                 if (encontrado) {
                     campos.forEach(c => { c.value = datos[c.name]; });
+                    window.ServiConfirm?.show('Cliente encontrado en el registro. Datos verificados.');
                     aviso.textContent = 'Cliente encontrado. Se usarán sus datos registrados, sin modificarlos.';
                 } else {
                     aviso.textContent = 'DNI/RUC nuevo. Completa los datos para registrar al cliente.';

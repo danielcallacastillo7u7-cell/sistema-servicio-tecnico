@@ -1,0 +1,12 @@
+.servi-confirm{position:fixed;top:max(18px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:1090;box-sizing:border-box;width:min(520px,calc(100vw - 32px));min-height:100px;display:flex;align-items:center;gap:12px;padding:8px 48px 8px 12px;background:#fff;border:1px solid #b5dfc6;border-radius:18px;box-shadow:0 12px 48px #0c302333;text-align:left;isolation:isolate;animation:servi-confirm-down .5s cubic-bezier(.2,.8,.2,1) both}
+.servi-confirm[hidden],.servi-confirm [hidden]{display:none!important}
+.servi-confirm-art{height:84px;width:96px;flex:0 0 96px;display:grid;place-items:center;overflow:hidden}
+.servi-confirm canvas{width:320px;max-width:none;height:180px;grid-area:1/1;place-self:center}
+.servi-confirm-fallback{color:#158044;font-size:56px;line-height:1;grid-area:1/1}
+.servi-confirm p{margin:0;color:#175d36;font-size:16px;font-weight:650;line-height:1.4;overflow-wrap:anywhere}
+.servi-confirm button{position:absolute;right:8px;top:8px;border:0;background:transparent;font-size:26px;color:#526259;width:36px;height:36px;border-radius:50%}
+.servi-confirm button:focus-visible{outline:2px solid #158044}
+@keyframes servi-confirm-down{from{opacity:0;transform:translate(-50%,calc(-100% - 32px))}to{opacity:1;transform:translate(-50%,0)}}
+@media(max-width:600px){.servi-confirm{top:max(12px,env(safe-area-inset-top));gap:4px;padding-left:4px}.servi-confirm-art{width:76px;flex-basis:76px}.servi-confirm p{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.servi-confirm{animation:none}}
+@media print{.servi-confirm{display:none!important}}

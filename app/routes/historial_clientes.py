@@ -3,6 +3,7 @@ from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database import obtener_db
+from app.models.instalacion import InstalacionCamara
 from app.models.cliente import Cliente
 from app.models.equipo import Equipo
 from app.models.orden import OrdenServicio
@@ -106,7 +107,7 @@ def historial_cliente(cliente_id: int, q: str = Query(default="", max_length=100
             id=orden.id, numero=orden.numero_orden, fecha=formatear_fecha_peru(orden.fecha_ingreso),
             estado=orden.estado, tecnico=orden.tecnico_responsable or 'Sin asignar', falla_reportada=orden.falla_reportada,
             equipos=[datos_equipo(e) for e in orden.equipos_recibidos],
-            diagnostico=None if diag is None else dict(falla=diag.falla_encontrada, solucion=diag.solucion_recomendada,
+            diagnostico=None if diag is None else dict(id=diag.id, falla=diag.falla_encontrada, solucion=diag.solucion_recomendada,
                 repuestos=diag.repuestos_necesarios or 'Ninguno', costo=f'{diag.costo_estimado:.2f}',
                 imagenes=[dict(url=f'/diagnosticos/imagenes/{i.id}', nombre=i.nombre_archivo) for i in diag.imagenes]),
             historial=[dict(estado=h.estado, fecha=formatear_fecha_peru(h.fecha)) for h in orden.historial],
@@ -114,3 +115,40 @@ def historial_cliente(cliente_id: int, q: str = Query(default="", max_length=100
         ))
     return dict(cliente=datos_cliente(cliente), equipos=[datos_equipo(e) for e in equipos],
                 ordenes=registros, total=total, total_ordenes=total_ordenes, pagina=pagina, paginas=paginas)
+
+
+@router.get("/instalaciones")
+def clientes_instalaciones(q: str = Query(default="", max_length=100), pagina: int = Query(default=1, ge=1), db: Session = Depends(obtener_db)):
+    documento = InstalacionCamara.datos['dni_ruc'].as_string()
+    resumen = db.query(InstalacionCamara.id.label('id'),
+        func.count().over(partition_by=documento).label('cantidad'),
+        func.row_number().over(partition_by=documento, order_by=(InstalacionCamara.fecha_registro.desc(), InstalacionCamara.id.desc())).label('posicion')).subquery()
+    consulta = db.query(InstalacionCamara, resumen.c.cantidad).join(resumen, resumen.c.id == InstalacionCamara.id).filter(resumen.c.posicion == 1)
+    if q.strip():
+        patron = patron_busqueda(q)
+        consulta = consulta.filter(or_(
+            (InstalacionCamara.datos['nombres'].as_string() + ' ' + InstalacionCamara.datos['apellidos'].as_string()).ilike(patron, escape='\\'),
+            documento.ilike(patron, escape='\\'), InstalacionCamara.datos['celular'].as_string().ilike(patron, escape='\\')))
+    total = consulta.count()
+    paginas = max(1, (total + 19)//20)
+    pagina = min(pagina, paginas)
+    filas = []
+    for i, cantidad in consulta.order_by(InstalacionCamara.datos['nombres'].as_string(), InstalacionCamara.id).offset((pagina-1)*20).limit(20).all():
+        d = i.datos
+        filas.append(dict(id=i.id, nombres=d.get('nombres',''), apellidos=d.get('apellidos',''), dni_ruc=d.get('dni_ruc',''), telefono=d.get('celular',''),
+            total_reparaciones=cantidad, ultima_reparacion=dict(numero=i.numero, fecha=i.fecha_instalacion.strftime('%d/%m/%Y'), estado='Fecha programada')))
+    return dict(clientes=filas, total=total, pagina=pagina, paginas=paginas)
+
+
+@router.get("/instalaciones/{registro_id}/historial")
+def historial_instalaciones(registro_id: int, pagina: int = Query(default=1, ge=1), db: Session = Depends(obtener_db)):
+    registro = db.get(InstalacionCamara, registro_id)
+    if registro is None:
+        raise HTTPException(404, 'Cliente de instalación no encontrado')
+    consulta = db.query(InstalacionCamara).filter(InstalacionCamara.datos['dni_ruc'].as_string() == registro.datos['dni_ruc'])
+    total = consulta.count()
+    paginas = max(1, (total+9)//10)
+    pagina = min(pagina, paginas)
+    filas = [dict(numero=i.numero, fecha=i.fecha_instalacion.strftime('%d/%m/%Y'), registro=formatear_fecha_peru(i.fecha_registro), tecnico=i.tecnico,
+        direccion=i.datos.get('direccion',''), url=f'/camaras/{i.id}/reporte') for i in consulta.order_by(InstalacionCamara.fecha_registro.desc(), InstalacionCamara.id.desc()).offset((pagina-1)*10).limit(10).all()]
+    return dict(instalaciones=filas, total=total, pagina=pagina, paginas=paginas)

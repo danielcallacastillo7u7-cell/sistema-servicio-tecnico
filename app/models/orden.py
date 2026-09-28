@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -17,6 +17,8 @@ class OrdenServicio(Base):
         index=True,
     )
     falla_reportada = Column(Text, nullable=False)
+    otro_producto_servicio = Column(Text, nullable=True)
+    servicio_domicilio = Column(Boolean, nullable=True)
     tecnico_responsable = Column(String(120), nullable=True, index=True)
     estado = Column(String(50), nullable=False, default="Recibido", index=True)
     fecha_ingreso = Column(

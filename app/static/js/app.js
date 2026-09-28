@@ -231,8 +231,9 @@ if (modalEditarDiagnostico && formularioEditarDiagnostico) {
     };
     modalEditarDiagnostico.querySelectorAll("[data-close-diagnosis]").forEach(elemento => elemento.addEventListener("click", cerrar));
 
-    document.querySelectorAll("[data-edit-diagnosis]").forEach(boton => {
-        boton.addEventListener("click", async () => {
+    document.addEventListener("click", async evento => {
+            const boton = evento.target.closest("[data-edit-diagnosis]");
+            if (!boton) return;
             modalEditarDiagnostico.hidden = false;
             titulo.textContent = "Cargando datos…";
             mensajeError.hidden = true;
@@ -250,7 +251,6 @@ if (modalEditarDiagnostico && formularioEditarDiagnostico) {
             } catch (error) {
                 mostrarError(error.message);
             }
-        });
     });
 
     formularioEditarDiagnostico.addEventListener("submit", async evento => {
@@ -271,6 +271,7 @@ if (modalEditarDiagnostico && formularioEditarDiagnostico) {
             });
             const datos = await respuesta.json();
             if (!respuesta.ok) throw new Error(datos.detail || "No se pudo actualizar el diagnóstico.");
+            window.ServiConfirm?.next('Diagnóstico actualizado.');
             window.location.reload();
         } catch (error) {
             mostrarError(error.message);

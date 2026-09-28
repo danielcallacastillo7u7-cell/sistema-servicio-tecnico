@@ -1,3 +1,4 @@
+from app.services.confirmaciones import redireccion_confirmada
 from pathlib import Path
 import re
 
@@ -174,4 +175,4 @@ def registrar_equipo(
             status_code=409,
         )
 
-    return RedirectResponse(url="/equipos", status_code=303)
+    return redireccion_confirmada("/equipos", "Equipo guardado correctamente.")

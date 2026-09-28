@@ -44,6 +44,16 @@ class MultiplesEquipos(unittest.TestCase):
         self.uno = dict(tipo='Laptop', marca='Lenovo', modelo='IdeaPad', numero_serie='SERIE-LAPTOP', accesorio_opcion='Especificar', accesorios_detalle='Cargador', observaciones='No enciende')
         self.dos = dict(tipo='Impresora', marca='Epson', modelo='L3250', numero_serie='SERIE-IMPRESORA', accesorio_opcion='Ninguno', observaciones='No imprime')
 
+    def test_atencion_opcional_y_domicilio(self):
+        r=self.guardar_individual(self.uno, falla_reportada='', otro_producto_servicio='Configurar red', servicio_domicilio='si')
+        self.assertEqual(r.status_code,200,r.text)
+        with SessionLocal() as db:
+            o=db.query(OrdenServicio).one()
+            self.assertEqual(o.falla_reportada,'')
+            self.assertEqual(o.otro_producto_servicio,'Configurar red')
+            self.assertTrue(o.servicio_domicilio)
+        self.assertIn('Configurar red',self.web.get('/ordenes/1/ticket').text)
+
     def guardar(self, equipos=None, **cambios):
         datos = dict(self.cliente)
         datos.update(cambios)

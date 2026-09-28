@@ -56,15 +56,40 @@
         return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
     }
 
+    function agregarProducto(bloque, valor = '') {
+        const lista = bloque.querySelector('.productos-equipo-filas');
+        if (lista.children.length >= 30) return;
+        const fila = document.createElement('div');
+        fila.className = 'd-flex gap-2 mb-2';
+        const input = document.createElement('input');
+        input.className = 'form-control producto-equipo-valor';
+        input.maxLength = 100;
+        input.placeholder = 'Ej. cargador, memoria RAM o disco SSD';
+        input.setAttribute('aria-label', 'Producto adicional vendido');
+        input.value = valor;
+        const quitar = document.createElement('button');
+        quitar.type = 'button'; quitar.className = 'btn btn-sm btn-outline-danger quitar-producto-equipo';
+        quitar.textContent = 'Quitar';
+        fila.append(input, quitar); lista.append(fila);
+        return input;
+    }
+    contenedor.addEventListener('click', e => {
+        const bloque = e.target.closest('.equipo-bloque');
+        if (!bloque || ocupado || estados.get(bloque)?.guardado || estados.get(bloque)?.incierto) return;
+        if (e.target.closest('.agregar-producto-equipo')) agregarProducto(bloque)?.focus();
+        if (e.target.closest('.quitar-producto-equipo')) e.target.closest('.quitar-producto-equipo').parentElement.remove();
+    });
+
     function crear(datos = {}, reemplazar = false) {
         const bloque = plantilla.cloneNode(true);
         const id = ++siguienteId;
         bloque.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
         bloque.querySelectorAll('input, select, textarea').forEach(campo => {
             campo.id = `equipo-${id}-${campo.name}`;
-            campo.value = typeof datos[campo.name] === 'string' ? datos[campo.name] : '';
+            campo.value = typeof datos[campo.name] === 'string' ? datos[campo.name] : (campo.name === 'servicio_domicilio' ? 'no' : '');
             campo.parentElement.querySelector('label')?.setAttribute('for', campo.id);
         });
+        (datos.otro_producto_servicio ? datos.otro_producto_servicio.split('\n') : ['']).forEach(v => agregarProducto(bloque, v));
         estados.set(bloque, { token: tokenSolicitud(), guardado: false, incierto: false, envio: null });
         condiciones(bloque);
         // Reemplaza el HTML inicial solo cuando el nuevo bloque está listo.
@@ -140,6 +165,7 @@
             if (!await formulario.verificarCliente()) return;
             if (ocupado || estado.guardado) return;
         }
+        if (!estado.envio) bloque.querySelector('[name=otro_producto_servicio]').value = [...bloque.querySelectorAll('.producto-equipo-valor')].map(i => i.value.trim()).filter(Boolean).join('\n');
         const campos = [...bloque.querySelectorAll('input, select, textarea')];
         if (!estado.envio) {
             // Validar solamente al cliente y al equipo cuyo botón se pulsó.
@@ -147,7 +173,7 @@
                 if (!campo.reportValidity()) return;
             }
             const datos = new URLSearchParams();
-            [...clientes, tecnico, ...campos].forEach(c => datos.set(c.name, c.value));
+            [...clientes, tecnico, ...campos].filter(c => c.name).forEach(c => datos.set(c.name, c.value));
             datos.set('solicitud_token', estado.token);
             estado.envio = datos.toString();
         }
@@ -182,6 +208,7 @@
             }
             if (!datos.id || !datos.numero_orden || !datos.ticket_url) throw new Error('Respuesta incompleta');
             estado.guardado = true;
+            window.ServiConfirm?.show('Orden guardada. Ticket generado correctamente.');
             estado.incierto = false;
             bloque.dataset.guardado = 'true';
             boton.textContent = 'Registrado';
