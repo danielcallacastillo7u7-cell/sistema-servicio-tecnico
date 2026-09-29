@@ -350,12 +350,14 @@ def eliminar_orden(
 def cambiar_estado_rapido(
     orden_id: int,
     nuevo_estado: str = Form(...),
+    motivo_no_reparado: str = Form(default="", max_length=2000),
     db: Session = Depends(obtener_db),
 ):
     transiciones = {
         "Recibido": {"Diagnosticado"},
         "Diagnosticado": {"En reparación"},
-        "En reparación": {"Listo para entrega"},
+        "En reparación": {"Listo para entrega", "No se pudo reparar"},
+        "No se pudo reparar": {"Entregado"},
         "Listo para entrega": {"Entregado"},
     }
     orden = db.get(OrdenServicio, orden_id)
@@ -364,6 +366,9 @@ def cambiar_estado_rapido(
     if nuevo_estado not in transiciones.get(orden.estado, set()):
         raise HTTPException(status_code=400, detail="Cambio de estado no permitido")
 
+    if nuevo_estado == "No se pudo reparar":
+        orden.motivo_no_reparado = motivo_no_reparado.strip()
+        orden.fecha_no_reparado = datetime.now(ZONA_HORARIA_PERU)
     orden.estado = nuevo_estado
     db.add(HistorialEstado(orden_id=orden.id, estado=nuevo_estado))
     db.commit()
@@ -431,3 +436,26 @@ def whatsapp_ticket(orden_id: int, db: Session = Depends(obtener_db)):
         raise HTTPException(status_code=400, detail="Revisa el celular peruano del cliente antes de abrir WhatsApp.")
     mensaje = f"Hola, le compartimos el ticket de recepción {orden.numero_orden} de ServiTech. Gracias por su confianza."
     return RedirectResponse("https://wa.me/" + telefono + "?" + urlencode({"text": mensaje}), status_code=303)
+
+
+@router.get('/no-reparados.xlsx')
+def exportar_no_reparados(db: Session = Depends(obtener_db)):
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+    from fastapi.responses import Response
+    wb = Workbook(); ws = wb.active; ws.title = 'No reparados'
+    ws.append(['Orden', 'Cliente', 'DNI/RUC', 'Celular', 'Equipo', 'Técnico', 'Fecha de resultado', 'Motivo', 'Estado actual'])
+    for o in db.query(OrdenServicio).filter(OrdenServicio.fecha_no_reparado.isnot(None)).order_by(OrdenServicio.fecha_no_reparado.desc()).all():
+        c = o.equipo.cliente
+        ws.append([o.numero_orden, c.nombres+' '+c.apellidos, c.dni_ruc, c.telefono,
+            '\n'.join(' '.join(filter(None,[e.tipo,e.marca,e.modelo])) for e in o.equipos_recibidos),
+            o.tecnico_responsable, o.fecha_no_reparado.astimezone(ZONA_HORARIA_PERU).strftime('%d/%m/%Y %H:%M') if o.fecha_no_reparado.tzinfo else o.fecha_no_reparado.strftime('%d/%m/%Y %H:%M'),
+            o.motivo_no_reparado or 'No especificado', o.estado])
+        for cell in ws[ws.max_row]:
+            if isinstance(cell.value,str): cell.data_type='s'
+    ws.freeze_panes='A2';ws.auto_filter.ref=ws.dimensions
+    for cell in ws[1]:cell.font=Font(bold=True)
+    for col in ws.columns:ws.column_dimensions[col[0].column_letter].width=25
+    out=BytesIO();wb.save(out)
+    return Response(out.getvalue(),media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',headers={'Content-Disposition':'attachment; filename="ordenes-no-reparadas.xlsx"','Cache-Control':'no-store'})

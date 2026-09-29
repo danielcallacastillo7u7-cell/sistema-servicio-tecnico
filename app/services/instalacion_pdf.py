@@ -22,6 +22,7 @@ def generar_instalacion_pdf(registro, fecha):
     heading.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'MIDDLE'),('BACKGROUND',(1,0),(1,0),colors.HexColor('#000000'))]))
     flow = [heading,Spacer(1,6*mm),p('Registro: '+registro.numero),p('Fecha de registro: '+fecha+' (Perú)'),p('Fecha programada: '+registro.fecha_instalacion.strftime('%d/%m/%Y'))]
     d = registro.datos
+    flow.append(p('Hora de instalación: '+(d.get('hora_instalacion') or 'Sin hora registrada')+' (Perú)'))
     def section(title, text=None):
         flow.extend([Spacer(1,4*mm),Paragraph(title,styles['Heading2'])])
         if text is not None: flow.append(p(text))

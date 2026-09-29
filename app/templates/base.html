@@ -26,6 +26,7 @@
         <a class="nav-link {% if seccion == 'clientes' %}active{% endif %}" href="/clientes"><i class="bi bi-people"></i> Clientes</a>
         <a class="nav-link {% if seccion in ['ordenes', 'camaras'] %}active{% endif %}" href="/ordenes"><i class="bi bi-file-earmark-text"></i> Servicios</a>
         <a class="nav-link {% if seccion == 'diagnosticos' %}active{% endif %}" href="/diagnosticos"><i class="bi bi-activity"></i> Diagnósticos <span id="diagnosticoAlerta" class="menu-alert" hidden>0</span></a>
+        <a class="nav-link {% if seccion == 'pagos_internet' %}active{% endif %}" href="/pagos-internet"><img src="/static/images/internet.png" alt="" style="width:24px;height:24px;object-fit:contain;border-radius:5px"> Pagos de internet</a>
         <a class="nav-link {% if seccion == 'exportaciones' %}active{% endif %}" href="/exportaciones"><i class="bi bi-file-earmark-spreadsheet"></i> Exportaciones</a>
         <a class="nav-link {% if seccion == 'ajustes' %}active{% endif %}" href="/ajustes"><i class="bi bi-gear"></i> Ajustes</a>
     </nav>

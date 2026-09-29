@@ -2,7 +2,7 @@
 {% block title %}Inicio | ServiTech{% endblock %}{% block page_title %}Panel principal{% endblock %}
 {% block page_subtitle %}<p class="page-subtitle">Bienvenido al sistema de gestión del taller</p>{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', path='/css/inicio.css') }}?v=20260908">{% endblock %}
-{% block header_extra %}<div class="home-summary-cards"><a class="home-total" href="/camaras/reportes"><span class="home-mini-icon"><i class="bi bi-camera-video" aria-hidden="true"></i></span><span><strong>Instalaciones</strong><b>{{ total_instalaciones }}</b><small>Registro completo</small></span></a>
+{% block header_extra %}<div class="home-summary-cards"><a class="home-total" href="/pagos-internet"><span class="home-mini-icon"><i class="bi bi-wifi" aria-hidden="true"></i></span><span><strong>Pagos de internet</strong><b>{{ total_pagos_internet }}</b><small>Total de pagos registrados</small></span></a><a class="home-total" href="/camaras/reportes"><span class="home-mini-icon"><i class="bi bi-camera-video" aria-hidden="true"></i></span><span><strong>Instalaciones</strong><b>{{ total_instalaciones }}</b><small>Registro completo</small></span></a>
 <a class="home-total" href="/?estado=Todas">
     <span class="home-mini-icon"><i class="bi bi-collection" aria-hidden="true"></i></span>
     <span><strong>Todas las órdenes</strong><b>{{ total_ordenes }}</b><small>Registro completo</small></span>
@@ -10,6 +10,8 @@
 </a></div>
 {% endblock %}
 {% block content %}
+<link rel="stylesheet" href="/static/css/ultimos-servicios.css?v=1">
+
 <div class="home-status-row mb-4">
     {% set tarjetas = [
     ('Recibidos', estados.recibidos, 'bi-envelope', 'red', 'Total de órdenes recibidas', 'Recibido'),
@@ -22,18 +24,23 @@
         <span class="status-card-icon"><i class="bi {{ icono }}" aria-hidden="true"></i></span><span class="status-card-copy"><strong>{{ etiqueta }}</strong><span class="home-status-number">{{ valor }}</span><small>{{ detalle }}</small></span>
     </a>
     {% endfor %}
-    <a class="home-canceled" href="/?estado=Cancelado">
+    <a class="home-canceled" href="/?estado=No%20reparados%20y%20cancelados">
         <span class="home-mini-icon"><i class="bi bi-x-circle" aria-hidden="true"></i></span>
-        <span><strong>Canceladas</strong><b>{{ total_canceladas }}</b><small>Registro de cancelaciones</small></span>
+        <span><strong>No reparados y cancelados</strong><b>{{ total_sin_reparacion }}</b><small>Incluye no reparados entregados</small></span>
     </a>
 </div>
 <div class="card panel-card orders-panel">
     <div class="card-body p-4">
         <div class="panel-heading">
-            <h2 class="section-title"><i class="bi bi-file-earmark-text"></i> Últimas órdenes</h2><a
-                class="btn btn-sm btn-outline-primary" href="/ordenes">Ver todas <i class="bi bi-arrow-right"></i></a>
+            <h2 class="section-title"><i class="bi bi-file-earmark-text"></i> Últimos servicios</h2><a id="serviciosVerTodos"
+                class="btn btn-sm btn-outline-primary" href="/?estado=Todas">Ver todos <i class="bi bi-arrow-right"></i></a>
         </div>
-        <div class="table-responsive">
+        <div class="ultimos-selector" role="tablist" aria-label="Tipo de servicio">
+            <button type="button" role="tab" id="tab-ordenes" aria-controls="ultimos-ordenes" aria-selected="true" data-servicio="ordenes">Órdenes</button>
+            <button type="button" role="tab" id="tab-instalaciones" aria-controls="ultimos-instalaciones" aria-selected="false" tabindex="-1" data-servicio="instalaciones">Instalaciones</button>
+            <button type="button" role="tab" id="tab-pagos" aria-controls="ultimos-pagos" aria-selected="false" tabindex="-1" data-servicio="pagos">Pagos de internet</button>
+        </div>
+        <div id="ultimos-ordenes" role="tabpanel" aria-labelledby="tab-ordenes" tabindex="0" class="table-responsive">
             <table class="table dashboard-table align-middle">
                 <thead>
                     <tr>
@@ -70,9 +77,22 @@
                 </tbody>
             </table>
         </div>
+        <div id="ultimos-instalaciones" role="tabpanel" aria-labelledby="tab-instalaciones" tabindex="0" class="table-responsive" hidden>
+          <table class="table dashboard-table align-middle"><thead><tr><th>Instalación</th><th>Cliente</th><th>Técnico</th><th>Fecha programada</th><th>Hora</th><th></th></tr></thead><tbody>
+          {% for i in ultimas_instalaciones %}<tr><td>{{ i.numero }}</td><td>{{ i.datos.nombres }} {{ i.datos.apellidos }}</td><td>{{ i.tecnico }}</td><td>{{ i.fecha_instalacion.strftime('%d/%m/%Y') }}</td><td>{{ i.datos.hora_instalacion or 'Sin hora registrada' }}</td><td><a href="/camaras/{{ i.id }}/reporte">Ver reporte</a></td></tr>
+          {% else %}<tr><td colspan="6" class="text-center py-4">Todavía no hay instalaciones registradas.</td></tr>{% endfor %}</tbody></table>
+        </div>
+        <div id="ultimos-pagos" role="tabpanel" aria-labelledby="tab-pagos" tabindex="0" class="table-responsive" hidden>
+          <table class="table dashboard-table align-middle"><thead><tr><th>Comprobante</th><th>Titular</th><th>Mes pagado</th><th>Total</th><th>Fecha y hora (Perú)</th><th></th></tr></thead><tbody>
+          {% for p in ultimos_pagos %}<tr><td>{{ p.numero }}</td><td>{{ p.datos.titular }}</td><td>{{ p.datos.periodo }}</td><td>S/ {{ '%.2f'|format(p.datos.total|float) }}</td><td>{{ p.fecha|pago_fecha }}</td><td><a href="/pagos-internet/{{ p.id }}/ticket" data-pago-ticket>Ver comprobante</a></td></tr>
+          {% else %}<tr><td colspan="6" class="text-center py-4">Todavía no hay pagos de internet registrados.</td></tr>{% endfor %}</tbody></table>
+        </div>
+        <small class="text-secondary">Los 5 registros más recientes de cada servicio.</small>
+
     </div>
 </div>
 
+<div class="d-flex gap-2 flex-wrap my-3"><a class="btn btn-outline-success" href="/ordenes/no-reparados.xlsx">Descargar Excel de no reparados</a></div>
 {% if estado_seleccionado %}
 <div class="status-modal" role="dialog" aria-modal="true"><a class="status-modal-backdrop" href="/"></a>
     <div class="status-modal-panel">
@@ -85,7 +105,7 @@
             {% for orden in ordenes_estado %}<div class="status-order">
                 <div><strong>{{ orden.numero_orden }}</strong><span>{{ orden.equipo.cliente.nombres }} {{
                         orden.equipo.cliente.apellidos }}</span><small>{% for equipo in orden.equipos_recibidos %}{{ equipo.tipo }} {{ equipo.marca }} {{ equipo.modelo or "" }}{% if not loop.last %} · {% endif %}{% endfor %}</small><small>Fecha: {{ orden.fecha_ingreso.strftime("%d/%m/%Y") }} ·
-                        Estado: {{ orden.estado }}</small></div>
+                        Estado: {{ orden.estado }}</small>{% if orden.fecha_no_reparado %}<small>Motivo: {{ orden.motivo_no_reparado or "No especificado" }}</small>{% endif %}</div>
                 <div>
                     {% if estado_seleccionado == 'Recibido' %}<a class="btn btn-sm btn-outline-primary"
                         href="/diagnosticos?orden_id={{ orden.id }}">Realizar diagnóstico</a>
@@ -99,7 +119,8 @@
                             value="Listo para entrega"><button class="btn btn-sm btn-success"
                             onclick="return confirm('¿Confirmas que el equipo está listo para entregar?')">Marcar como
                             listo</button></form>
-                    {% elif estado_seleccionado == 'Listo para entrega' %}<form method="post"
+                    <details class="mt-2"><summary class="text-danger" style="cursor:pointer">No se pudo reparar</summary><form method="post" action="/ordenes/{{ orden.id }}/estado-rapido" class="mt-2"><input type="hidden" name="nuevo_estado" value="No se pudo reparar"><label class="form-label" for="motivo-no-{{ orden.id }}">Motivo (opcional)</label><textarea id="motivo-no-{{ orden.id }}" name="motivo_no_reparado" class="form-control mb-2" rows="2" maxlength="2000" placeholder="Ej. falta de repuestos, daño irreparable…"></textarea><button class="btn btn-sm btn-outline-danger">Guardar como no reparado</button></form></details>
+                    {% elif estado_seleccionado in ['Listo para entrega', 'No se pudo reparar', 'No reparados y cancelados'] and orden.estado in ['Listo para entrega', 'No se pudo reparar'] %}<form method="post"
                         action="/ordenes/{{ orden.id }}/estado-rapido"><input type="hidden" name="nuevo_estado"
                             value="Entregado"><button class="btn btn-sm btn-dark"
                             onclick="return confirm('¿Confirmas que el equipo ya fue entregado al cliente?')">Confirmar
@@ -111,4 +132,6 @@
     </div>
 </div>
 {% endif %}
+{% include "pago_comprobante_modal.html" %}
+<script src="/static/js/ultimos-servicios.js?v=1"></script>
 {% endblock %}

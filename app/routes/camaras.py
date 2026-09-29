@@ -55,6 +55,7 @@ class Registro(Texto):
     dni_ruc: str = Field(pattern=r'^(?:[0-9]{8}|[0-9]{11})$')
     celular: str = Field(pattern=r'^[0-9]{9}$')
     tecnico_id: int = Field(gt=0)
+    hora_instalacion: str = Field(default="", pattern=r"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$|^$")
     fecha_instalacion: date
     direccion: str = Field(min_length=5, max_length=500)
     camaras: list[Camara] = Field(default_factory=list, max_length=100)
@@ -150,3 +151,11 @@ def descargar_reporte(registro_id: int, db: Session = Depends(obtener_db)):
         raise HTTPException(404, 'Instalación no encontrada.')
     from app.services.instalacion_pdf import generar_instalacion_pdf
     return Response(generar_instalacion_pdf(registro, fecha_local(registro.fecha_registro)), media_type='application/pdf', headers={'Content-Disposition': f'attachment; filename="Instalacion-{registro.numero}.pdf"', 'Cache-Control': 'no-store'})
+
+
+@router.get('/agenda')
+def agenda_instalaciones(mes: date, db: Session = Depends(obtener_db)):
+    desde = mes.replace(day=1)
+    hasta = (desde.replace(day=28) + timedelta(days=4)).replace(day=1)
+    registros = db.query(InstalacionCamara).filter(InstalacionCamara.fecha_instalacion >= desde, InstalacionCamara.fecha_instalacion < hasta).order_by(InstalacionCamara.fecha_instalacion, InstalacionCamara.id).all()
+    return [dict(fecha=r.fecha_instalacion.isoformat(), hora=r.datos.get('hora_instalacion') or 'Sin hora registrada', tecnico=r.tecnico, numero=r.numero) for r in registros]

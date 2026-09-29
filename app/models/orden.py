@@ -16,6 +16,8 @@ class OrdenServicio(Base):
         nullable=False,
         index=True,
     )
+    motivo_no_reparado = Column(Text, nullable=True)
+    fecha_no_reparado = Column(DateTime(timezone=True), nullable=True)
     falla_reportada = Column(Text, nullable=False)
     otro_producto_servicio = Column(Text, nullable=True)
     servicio_domicilio = Column(Boolean, nullable=True)
