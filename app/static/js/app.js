@@ -16,7 +16,7 @@ function abrirDetalleOrden(item) {
         : '<p class="detail-pending">Pendiente de diagnóstico.</p>';
     const modal = document.createElement("div");
     modal.className = "order-detail-modal";
-    modal.innerHTML = `<div class="order-detail-backdrop" data-close-detail></div><section class="order-detail-panel" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><header class="order-detail-header"><div><small>DETALLE DE LA ORDEN</small><h2 id="detailTitle">${escaparHtml(item.numero)}</h2></div><button type="button" class="order-detail-close" data-close-detail aria-label="Cerrar">×</button></header><div class="order-detail-body"><section class="detail-section"><h3><i class="bi bi-person"></i> Datos del cliente</h3><div class="detail-list"><span><b>Nombre:</b> ${escaparHtml(item.datos_cliente.nombres)}</span><span><b>DNI/RUC:</b> ${escaparHtml(item.datos_cliente.documento)}</span><span><b>Celular:</b> ${escaparHtml(item.datos_cliente.telefono)}</span></div></section><section class="detail-section"><h3><i class="bi bi-pc-display"></i> Datos del equipo</h3><div class="detail-list"><span><b>Equipo:</b> ${escaparHtml(item.datos_equipo.tipo)}</span><span><b>Marca:</b> ${escaparHtml(item.datos_equipo.marca)}</span><span><b>Modelo:</b> ${escaparHtml(item.datos_equipo.modelo)}</span><span><b>Serie:</b> ${escaparHtml(item.datos_equipo.serie)}</span><span><b>Accesorios:</b> ${escaparHtml(item.datos_equipo.accesorios)}</span><span><b>Observaciones:</b> ${escaparHtml(item.datos_equipo.observaciones)}</span></div></section><section class="detail-section"><h3><i class="bi bi-file-earmark-text"></i> Datos de la orden</h3><div class="detail-list"><span><b>Fecha:</b> ${escaparHtml(item.fecha)}</span><span><b>Estado:</b> ${escaparHtml(item.estado)}</span><span><b>Técnico:</b> ${escaparHtml(item.datos_orden.tecnico)}</span><span><b>Falla reportada:</b> ${escaparHtml(item.datos_orden.falla_reportada)}</span></div></section><section class="detail-section detail-diagnosis"><h3><i class="bi bi-activity"></i> Especificaciones / diagnóstico</h3>${diagnostico}</section></div><footer class="order-detail-actions"><a class="btn btn-outline-dark" href="/ordenes?ticket=${encodeURIComponent(item.id)}">Ver ticket</a><button type="button" class="btn btn-primary" data-close-detail>Cerrar</button></footer></section>`;
+    modal.innerHTML = `<div class="order-detail-backdrop" data-close-detail></div><section class="order-detail-panel" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><header class="order-detail-header"><div><small>DETALLE DE LA ORDEN</small><h2 id="detailTitle">${escaparHtml(item.numero)}</h2></div><button type="button" class="order-detail-close" data-close-detail aria-label="Cerrar">×</button></header><div class="order-detail-body"><section class="detail-section"><h3><i class="bi bi-person"></i> Datos del cliente</h3><div class="detail-list"><span><b>Nombre:</b> ${escaparHtml(item.datos_cliente.nombres)}</span><span><b>DNI/RUC:</b> ${escaparHtml(item.datos_cliente.documento)}</span><span><b>Celular:</b> ${escaparHtml(item.datos_cliente.telefono)}</span></div></section><section class="detail-section"><h3><i class="bi bi-pc-display"></i> Datos del equipo</h3>${(item.equipos || [item.datos_equipo]).map((equipo, indice) => `<div class="detail-list mb-3"><strong>Equipo ${indice + 1}</strong><span><b>Tipo:</b> ${escaparHtml(equipo.tipo)}</span><span><b>Marca / modelo:</b> ${escaparHtml(equipo.marca)} / ${escaparHtml(equipo.modelo)}</span><span><b>Serie:</b> ${escaparHtml(equipo.serie)}</span><span><b>Accesorios:</b> ${escaparHtml(equipo.accesorios)}</span><span><b>Observaciones:</b> ${escaparHtml(equipo.observaciones)}</span></div>`).join('')}</section><section class="detail-section"><h3><i class="bi bi-file-earmark-text"></i> Datos de la orden</h3><div class="detail-list"><span><b>Fecha:</b> ${escaparHtml(item.fecha)}</span><span><b>Estado:</b> ${escaparHtml(item.estado)}</span><span><b>Técnico:</b> ${escaparHtml(item.datos_orden.tecnico)}</span><span><b>Falla reportada:</b> ${escaparHtml(item.datos_orden.falla_reportada)}</span></div></section><section class="detail-section detail-diagnosis"><h3><i class="bi bi-activity"></i> Especificaciones / diagnóstico</h3>${diagnostico}</section></div><footer class="order-detail-actions"><a class="btn btn-outline-dark" href="/ordenes?ticket=${encodeURIComponent(item.id)}">Ver ticket</a><button type="button" class="btn btn-primary" data-close-detail>Cerrar</button></footer></section>`;
     const cerrar = () => modal.remove();
     modal.querySelectorAll("[data-close-detail]").forEach(elemento => elemento.addEventListener("click", cerrar));
     document.body.appendChild(modal);
@@ -205,5 +205,78 @@ if (imagenesDiagnostico && vistaPreviaImagenes && contadorImagenes) {
         archivosSeleccionados.splice(Number(boton.dataset.removeImage), 1);
         sincronizarInput();
         mostrarVistaPrevia();
+    });
+}
+
+const modalEditarDiagnostico = document.querySelector("#editarDiagnosticoModal");
+const formularioEditarDiagnostico = document.querySelector("#editarDiagnosticoForm");
+if (modalEditarDiagnostico && formularioEditarDiagnostico) {
+    const titulo = document.querySelector("#editarDiagnosticoTitulo");
+    const campoId = document.querySelector("#editarDiagnosticoId");
+    const campoFalla = document.querySelector("#editarFalla");
+    const campoSolucion = document.querySelector("#editarSolucion");
+    const campoRepuestos = document.querySelector("#editarRepuestos");
+    const campoCosto = document.querySelector("#editarCosto");
+    const mensajeError = document.querySelector("#editarDiagnosticoError");
+    const botonGuardar = document.querySelector("#guardarDiagnostico");
+
+    const mostrarError = mensaje => {
+        mensajeError.textContent = mensaje;
+        mensajeError.hidden = false;
+    };
+    const cerrar = () => {
+        modalEditarDiagnostico.hidden = true;
+        mensajeError.hidden = true;
+        formularioEditarDiagnostico.reset();
+    };
+    modalEditarDiagnostico.querySelectorAll("[data-close-diagnosis]").forEach(elemento => elemento.addEventListener("click", cerrar));
+
+    document.addEventListener("click", async evento => {
+            const boton = evento.target.closest("[data-edit-diagnosis]");
+            if (!boton) return;
+            modalEditarDiagnostico.hidden = false;
+            titulo.textContent = "Cargando datos…";
+            mensajeError.hidden = true;
+            try {
+                const respuesta = await fetch(`/diagnosticos/api/${encodeURIComponent(boton.dataset.editDiagnosis)}`);
+                const datos = await respuesta.json();
+                if (!respuesta.ok) throw new Error(datos.detail || "No se pudo cargar el diagnóstico.");
+                campoId.value = datos.id;
+                titulo.textContent = `Orden ${datos.numero_orden}`;
+                campoFalla.value = datos.falla_encontrada;
+                campoSolucion.value = datos.solucion_recomendada;
+                campoRepuestos.value = datos.repuestos_necesarios;
+                campoCosto.value = datos.costo_estimado;
+                campoFalla.focus();
+            } catch (error) {
+                mostrarError(error.message);
+            }
+    });
+
+    formularioEditarDiagnostico.addEventListener("submit", async evento => {
+        evento.preventDefault();
+        mensajeError.hidden = true;
+        botonGuardar.disabled = true;
+        botonGuardar.textContent = "Guardando…";
+        try {
+            const respuesta = await fetch(`/diagnosticos/api/${encodeURIComponent(campoId.value)}`, {
+                method: "PUT",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    falla_encontrada: campoFalla.value,
+                    solucion_recomendada: campoSolucion.value,
+                    repuestos_necesarios: campoRepuestos.value,
+                    costo_estimado: campoCosto.value
+                })
+            });
+            const datos = await respuesta.json();
+            if (!respuesta.ok) throw new Error(datos.detail || "No se pudo actualizar el diagnóstico.");
+            window.ServiConfirm?.next('Diagnóstico actualizado.');
+            window.location.reload();
+        } catch (error) {
+            mostrarError(error.message);
+            botonGuardar.disabled = false;
+            botonGuardar.textContent = "Guardar cambios";
+        }
     });
 }

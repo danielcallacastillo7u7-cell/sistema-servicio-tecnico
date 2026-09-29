@@ -1,0 +1,30 @@
+<div class="card panel-card">
+    <div class="card-body p-4">
+        <h2 class="section-title"><i class="bi bi-archive"></i> Órdenes canceladas</h2>
+        <p class="text-secondary">Se conservan para no perder el historial del cliente y del equipo.</p>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Orden</th>
+                        <th>Cliente</th>
+                        <th>Motivo</th>
+                        <th>Detalle</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cancelaciones %}<tr>
+                        <td><a href="/ordenes?ticket={{ item.orden.id }}">{{ item.orden.numero_orden }}</a></td>
+                        <td>{{ item.orden.equipo.cliente.nombres }} {{ item.orden.equipo.cliente.apellidos }}</td>
+                        <td>{{ item.motivo }}</td>
+                        <td>{{ item.detalle or "—" }}</td>
+                        <td>{{ item.fecha.strftime("%d/%m/%Y %H:%M") }}</td>
+                    </tr>{% else %}<tr>
+                        <td colspan="5">No hay órdenes canceladas.</td>
+                    </tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

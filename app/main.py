@@ -4,38 +4,63 @@ from fastapi import Depends, FastAPI, Query, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.gzip import GZipMiddleware
-from sqlalchemy import func, text
+from sqlalchemy import func, text, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import Base, engine, obtener_db
+from app.models.pago_internet import PagoInternet
+from app.routes.pagos_internet import router as pagos_internet_router
+from app.models.instalacion import InstalacionCamara
 from app.models.cliente import Cliente
 from app.models.cancelacion import CancelacionOrden
 from app.models.diagnostico import Diagnostico
 from app.models.equipo import Equipo
+from app.models.exportacion import HistorialExportacion
 from app.models.historial import HistorialEstado
 from app.models.orden import OrdenServicio
+from app.models.orden_equipo import OrdenEquipo
+from app.models.solicitud_equipo import SolicitudEquipo
+from app.migraciones import migrar_equipos_orden, migrar_detalles_servicio
 from app.models.trabajador import Trabajador
+from app.routes.camaras import router as camaras_router
 from app.routes.clientes import router as clientes_router
 from app.routes.busqueda import router as busqueda_router
 from app.routes.ajustes import router as ajustes_router
 from app.routes.diagnosticos import router as diagnosticos_router
 from app.routes.equipos import router as equipos_router
 from app.routes.ordenes import router as ordenes_router
+from app.routes.exportaciones import router as exportaciones_router
 
 BASE_DIR = Path(__file__).resolve().parent
 
-app = FastAPI(title="ServiTech")
+from contextlib import asynccontextmanager
+from app.services.sheets_automatico import iniciar, detener
+
+@asynccontextmanager
+async def lifespan(app):
+    iniciar()
+    try:
+        yield
+    finally:
+        detener()
+
+app = FastAPI(title="ServiTech", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
-# Crea en Neon las tablas de los modelos importados.
+# Crea en PostgreSQL local las tablas de los modelos importados.
 Base.metadata.create_all(bind=engine)
+migrar_equipos_orden(engine)
+migrar_detalles_servicio(engine)
 
+app.include_router(pagos_internet_router)
+app.include_router(camaras_router)
 app.include_router(clientes_router)
 app.include_router(ajustes_router)
 app.include_router(busqueda_router)
 app.include_router(diagnosticos_router)
 app.include_router(equipos_router)
 app.include_router(ordenes_router)
+app.include_router(exportaciones_router)
 
 app.mount(
     "/static",
@@ -44,6 +69,8 @@ app.mount(
 )
 
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
+from app.routes.pagos_internet import fecha_peru
+templates.env.filters["pago_fecha"] = fecha_peru
 
 
 @app.get("/")
@@ -68,7 +95,7 @@ def inicio(
         "reparacion": conteos.get("En reparación", 0),
         "listos": conteos.get("Listo para entrega", 0),
     }
-    total_ordenes = db.query(func.count(OrdenServicio.id)).scalar() or 0
+    total_ordenes = db.query(func.count(OrdenServicio.id)).filter(OrdenServicio.fecha_no_reparado.is_(None)).scalar() or 0
     total_canceladas = (
         db.query(func.count(OrdenServicio.id))
         .filter(OrdenServicio.estado == "Cancelado")
@@ -78,14 +105,17 @@ def inicio(
     ultimas_ordenes = (
         db.query(OrdenServicio)
         .options(
-            joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente),
+            joinedload(OrdenServicio.recepciones), joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente),
             joinedload(OrdenServicio.diagnostico),
         )
         .order_by(OrdenServicio.id.desc())
         .limit(5)
         .all()
     )
+    sin_reparacion = or_(OrdenServicio.estado == "Cancelado", OrdenServicio.fecha_no_reparado.isnot(None), OrdenServicio.estado == "No se pudo reparar")
     estados_panel_validos = {
+        "No reparados y cancelados",
+        "No se pudo reparar",
         "Todas",
         "Recibido",
         "Diagnosticado",
@@ -98,11 +128,17 @@ def inicio(
         consulta_ordenes = (
             db.query(OrdenServicio)
             .options(
-                joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente),
+                joinedload(OrdenServicio.recepciones), joinedload(OrdenServicio.equipo).joinedload(Equipo.cliente),
                 joinedload(OrdenServicio.diagnostico),
             )
         )
-        if estado != "Todas":
+        if estado == "No reparados y cancelados":
+            consulta_ordenes = consulta_ordenes.filter(sin_reparacion)
+        elif estado == "Todas":
+            consulta_ordenes = consulta_ordenes.filter(OrdenServicio.fecha_no_reparado.is_(None))
+        elif estado == "No se pudo reparar":
+            consulta_ordenes = consulta_ordenes.filter(OrdenServicio.fecha_no_reparado.isnot(None))
+        else:
             consulta_ordenes = consulta_ordenes.filter(OrdenServicio.estado == estado)
         ordenes_estado = consulta_ordenes.order_by(OrdenServicio.id.desc()).all()
     return templates.TemplateResponse(
@@ -113,8 +149,14 @@ def inicio(
             "seccion": "inicio",
             "estados": estados,
             "total_ordenes": total_ordenes,
+            "total_no_reparadas": db.query(func.count(OrdenServicio.id)).filter(OrdenServicio.fecha_no_reparado.isnot(None)).scalar() or 0,
+            "total_instalaciones": db.query(func.count(InstalacionCamara.id)).scalar() or 0,
             "total_canceladas": total_canceladas,
+            "total_sin_reparacion": db.query(func.count(OrdenServicio.id)).filter(sin_reparacion).scalar() or 0,
+            "total_pagos_internet": db.query(func.count(PagoInternet.id)).scalar() or 0,
             "ultimas_ordenes": ultimas_ordenes,
+            "ultimas_instalaciones": db.query(InstalacionCamara).order_by(InstalacionCamara.id.desc()).limit(5).all(),
+            "ultimos_pagos": db.query(PagoInternet).order_by(PagoInternet.id.desc()).limit(5).all(),
             "estado_seleccionado": estado if estado in estados_panel_validos else None,
             "estado_titulo": (
                 "Todas las órdenes" if estado == "Todas" else "Órdenes canceladas" if estado == "Cancelado" else estado

@@ -1,3 +1,4 @@
+from app.services.confirmaciones import redireccion_confirmada
 from pathlib import Path
 import re
 
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import obtener_db
 from app.models.cliente import Cliente
+from app.services.clientes import datos_cliente_coinciden
 from app.models.equipo import Equipo
 
 router = APIRouter(prefix="/equipos", tags=["Equipos"])
@@ -143,10 +145,13 @@ def registrar_equipo(
         )
         db.add(cliente)
         db.flush()
-    else:
-        cliente.nombres = nombres
-        cliente.apellidos = apellidos
-        cliente.telefono = telefono
+    elif not datos_cliente_coinciden(cliente, nombres, apellidos, telefono):
+        db.rollback()
+        return templates.TemplateResponse(
+            request=request, name="equipos.html",
+            context=contexto_equipos(db, "Este DNI/RUC ya está registrado. Usa los datos guardados del cliente; registrar un equipo no puede modificarlos."),
+            status_code=409,
+        )
 
     equipo = Equipo(
         cliente_id=cliente.id,
@@ -170,4 +175,4 @@ def registrar_equipo(
             status_code=409,
         )
 
-    return RedirectResponse(url="/equipos", status_code=303)
+    return redireccion_confirmada("/equipos", "Equipo guardado correctamente.")

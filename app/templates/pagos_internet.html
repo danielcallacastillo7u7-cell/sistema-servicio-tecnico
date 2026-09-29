@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Pagos de internet | ServiTech{% endblock %}
+{% block page_title %}Pagos de internet{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Registra el pago y genera su comprobante.</p>{% endblock %}
+{% block content %}
+<div class="text-end text-secondary mb-3"><small>Fecha y hora de emisión (Perú): <time id="p-fecha-emision"></time></small></div>
+<form id="internetPago" class="card panel-card"><div class="card-body p-4"><div class="row g-3">
+
+<div class="col-md-6"><label for="p-emisor" class="form-label">Emitido por *</label><select id="p-emisor" name="tecnico_id" class="form-select" required><option value="">Selecciona un técnico</option>{% for t in tecnicos %}<option value="{{ t.id }}">{{ t.nombre }}</option>{% endfor %}</select></div>
+<div class="col-md-6"><label for="p-mes" class="form-label">Mes y año que va a pagar *</label><input id="p-mes" name="periodo" type="month" class="form-control" required></div>
+<div class="col-md-6"><label for="p-titular" class="form-label">Nombre completo del titular *</label><input id="p-titular" name="titular" class="form-control" minlength="2" maxlength="150" required></div>
+<div class="col-md-6"><label for="p-dni" class="form-label">DNI del titular *</label><input id="p-dni" name="dni" class="form-control" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required></div>
+<div class="col-md-6"><label for="p-celular" class="form-label">Celular *</label><input id="p-celular" name="celular" class="form-control" inputmode="numeric" pattern="9[0-9]{8}" maxlength="9" required></div>
+<div class="col-12"><label for="p-direccion" class="form-label">Dirección del titular *</label><input id="p-direccion" name="direccion" class="form-control" minlength="3" maxlength="500" required></div>
+<div class="col-12"><label for="p-observacion" class="form-label">Observación (opcional)</label><textarea id="p-observacion" name="observacion" class="form-control" maxlength="2000" rows="2"></textarea></div>
+<div class="col-md-6"><label for="p-total" class="form-label">Total del pago (S/) *</label><input id="p-total" name="total" type="number" min="0.01" max="99999999.99" step="0.01" class="form-control" required></div>
+</div><button id="p-guardar" class="btn btn-primary mt-3" {% if not tecnicos %}disabled{% endif %}>Guardar pago y ver comprobante</button><p id="p-mensaje" role="status" class="mt-3"></p><a id="p-ticket" class="btn btn-outline-primary" hidden data-pago-ticket>Ver / imprimir comprobante</a> <a href="/pagos-internet" id="p-nuevo" class="btn btn-outline-secondary" hidden>Nuevo pago</a></div></form>
+<h2 class="section-title mt-4">Últimos 50 pagos</h2><div class="table-responsive"><table class="table"><thead><tr><th>Comprobante</th><th>Fecha y hora</th><th>Titular</th><th>Mes pagado</th><th>Total</th><th></th></tr></thead><tbody>{% for p in pagos %}<tr><td>{{ p.numero }}</td><td>{{ p.fecha|pago_fecha }}</td><td>{{ p.datos.titular }}</td><td>{{ p.datos.periodo }}</td><td>S/ {{ p.datos.total }}</td><td><a href="/pagos-internet/{{ p.id }}/ticket" data-pago-ticket>Ver comprobante</a></td></tr>{% else %}<tr><td colspan="6">No hay pagos registrados.</td></tr>{% endfor %}</tbody></table></div>
+{% include "pago_comprobante_modal.html" %}
+<script src="/static/js/pagos-internet.js?v=3"></script>{% endblock %}

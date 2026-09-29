@@ -1,15 +1,86 @@
 {% extends "base.html" %}
-{% block title %}Clientes | ServiTech{% endblock %}{% block page_title %}Clientes{% endblock %}
+{% block title %}Clientes | ServiTech{% endblock %}{% block page_title %}Clientes e historial{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Consulta las órdenes de servicio y las instalaciones de tus clientes</p>{% endblock %}
 {% block content %}
+<style>#historialFiltros[hidden],#ultimaReparacionTitulo[hidden],#ultimaReparacion[hidden],#resumenReparaciones[hidden]{display:none!important}#clienteHistorial[hidden],#clientesApp button[hidden],#todasReparaciones[hidden]{display:none!important}#clienteHistorial article{overflow-wrap:anywhere}#clienteHistorial p{white-space:pre-wrap}#todasReparaciones>summary{cursor:pointer;font-weight:600;padding:12px 0}
+.clients-search-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px}
+.clients-search-heading .section-title{margin:0}
+.clients-mode-slider{position:relative;isolation:isolate;display:flex;flex:0 0 300px;margin-left:auto;padding:5px;border-radius:40px;background:linear-gradient(180deg,#d3d7dc,#f0f2f5);box-shadow:inset 3px 4px 7px #adb3bc,inset -3px -3px 7px #fff;border:1px solid #dce0e5}
+.clients-mode-thumb{position:absolute;z-index:-1;left:5px;top:5px;bottom:5px;width:calc(50% - 5px);border-radius:30px;background:linear-gradient(145deg,#fff,#e9edf2);border:1px solid #fff;box-shadow:3px 3px 7px #aab1bb;transition:transform .25s ease}
+.clients-mode-slider.is-installations .clients-mode-thumb{transform:translateX(100%)}
+.clients-mode-slider button{flex:1;min-width:0;padding:12px 6px;border:0;border-radius:30px;background:transparent;color:#5d6673;font-size:14px;font-weight:600;transition:color .25s}
+.clients-mode-slider button[aria-pressed="true"]{color:#ce0035}
+.clients-mode-slider button:focus-visible{outline:3px solid #ce0035;outline-offset:3px}
+@media(max-width:480px){.clients-mode-slider{flex-basis:100%}}
+@media(prefers-reduced-motion:reduce){.clients-mode-thumb,.clients-mode-slider button{transition:none}}
+</style>
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<div class="card panel-card mb-4"><div class="card-body p-4"><h2 class="section-title">Registrar cliente</h2>
-<form method="post" action="/clientes"><div class="row g-3">
-<div class="col-md-6"><label class="form-label">Nombres</label><input name="nombres" class="form-control" required></div>
-<div class="col-md-6"><label class="form-label">Apellidos</label><input name="apellidos" class="form-control" required></div>
-<div class="col-md-6"><label class="form-label">DNI o RUC</label><input name="dni_ruc" class="form-control" required></div>
-<div class="col-md-6"><label class="form-label">Teléfono</label><input name="telefono" class="form-control" required></div>
-</div><button class="btn btn-primary mt-3">Guardar cliente</button></form></div></div>
-<div class="card panel-card"><div class="card-body p-4"><h2 class="section-title">Clientes registrados</h2><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Cliente</th><th>DNI/RUC</th><th>Teléfono</th></tr></thead><tbody>
-{% for cliente in clientes %}<tr><td>{{ cliente.nombres }} {{ cliente.apellidos }}</td><td>{{ cliente.dni_ruc }}</td><td>{{ cliente.telefono }}</td></tr>{% else %}<tr><td colspan="3">Todavía no hay clientes.</td></tr>{% endfor %}
-</tbody></table></div></div></div>
+<div id="clientesApp">
+    <div class="clients-tools"><section class="card panel-card panel-neutral-top clients-search"><div class="card-body p-4">
+        <div class="clients-search-heading">
+            <h2 class="section-title"><i class="bi bi-people"></i> <span id="clientesTipoTitulo">Clientes de órdenes de servicio</span></h2>
+            <div class="clients-mode-slider" role="group" aria-label="Tipo de atención">
+                <span class="clients-mode-thumb" aria-hidden="true"></span>
+                <button type="button" data-clientes-modo="ordenes" aria-pressed="true">Órdenes</button>
+                <button type="button" data-clientes-modo="instalaciones" aria-pressed="false">Instalaciones</button>
+            </div>
+        </div>
+        <label for="buscarClientes" class="form-label">Buscar por nombre, apellidos, DNI/RUC o teléfono</label>
+        <input id="buscarClientes" class="form-control" type="search" maxlength="100" placeholder="Escribe para buscar…" autocomplete="off">
+        <p id="clientesMensaje" class="form-text mt-2" role="status" aria-live="polite"></p>
+    </div></section>
+    </div><dialog id="editarClienteDialog" class="client-edit-dialog" aria-labelledby="editarClienteTitulo"><div class="client-edit-layout"><section class="card panel-card client-editor"><div class="card-body p-4">
+        <h2 id="editarClienteTitulo" class="section-title"><i class="bi bi-pencil-square"></i> Editar cliente</h2>
+        <p id="editorClienteVacio" class="text-secondary">Selecciona «Editar» en un cliente para corregir sus datos.</p>
+        <form id="editarClienteForm" hidden>
+            <p id="editorClienteNombre" class="fw-semibold"></p>
+            <div class="client-editor-fields">
+                <div><label for="editarClienteNombres" class="form-label">Nombres</label><input id="editarClienteNombres" class="form-control" maxlength="100" required></div>
+                <div><label for="editarClienteApellidos" class="form-label">Apellidos</label><input id="editarClienteApellidos" class="form-control" maxlength="100" required></div>
+                <div><label for="editarClienteDocumento" class="form-label">DNI/RUC</label><input id="editarClienteDocumento" class="form-control" inputmode="numeric" pattern="[0-9]{8}|[0-9]{11}" maxlength="11" required></div>
+                <div><label for="editarClienteTelefono" class="form-label">Celular</label><input id="editarClienteTelefono" class="form-control" inputmode="numeric" pattern="[0-9]{9}" maxlength="9" required></div>
+            </div>
+            <p class="form-text mt-3">Actualiza los datos del cliente en todas sus atenciones y futuras reimpresiones.</p>
+            <div class="d-flex gap-2"><button id="guardarCliente" class="btn btn-primary" type="submit">Guardar cambios</button><button id="cancelarEditarCliente" class="btn btn-outline-secondary" type="button">Cancelar</button></div>
+        </form>
+        <p id="editorClienteMensaje" class="mt-3 mb-0" role="status" aria-live="polite"></p>
+    </div></section><aside class="client-documents"><h3>Comprobantes actualizados</h3><p>Guarda los cambios y selecciona la orden que deseas volver a generar.</p><label for="editorOrden">Orden de servicio</label><select id="editorOrden" class="form-select" disabled></select><p id="editorDocumentosMensaje" role="status"></p><div id="editorDocumentosAcciones" hidden><a id="editorTicket" class="btn btn-outline-primary" target="_blank" rel="noopener">Ver / Imprimir ticket</a><a id="editorA4" class="btn btn-primary" download>Descargar A4</a></div><button id="editorMasOrdenes" type="button" class="btn btn-outline-secondary" hidden>Cargar más órdenes</button><small>Se genera nuevamente el comprobante de la misma orden. Los archivos descargados anteriormente no se modifican.</small></aside></div></dialog>
+    <section class="card panel-card clients-table mb-4"><div class="card-body p-4">
+        <div class="table-responsive"><table class="table align-middle">
+            <thead><tr><th>Cliente</th><th>DNI/RUC</th><th>Teléfono</th><th id="clientesCantidadTitulo">Reparaciones</th><th id="clientesUltimaTitulo">Última reparación</th><th>Acciones</th></tr></thead>
+            <tbody id="clientesFilas"></tbody>
+        </table></div>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <button id="clientesAnterior" class="btn btn-sm btn-outline-dark" type="button">Anterior</button>
+            <span id="clientesPagina"></span>
+            <button id="clientesSiguiente" class="btn btn-sm btn-outline-dark" type="button">Siguiente</button>
+            <button id="clientesReintentar" class="btn btn-sm btn-outline-primary" type="button" hidden>Reintentar</button>
+        </div>
+    </div></section>
+    <section id="clienteHistorial" class="card panel-card mb-4" hidden><div class="card-body p-4">
+        <div class="d-flex justify-content-between gap-3"><h2 id="historialTitulo" class="section-title" tabindex="-1">Historial del cliente</h2>
+            <button id="cerrarHistorial" type="button" class="btn btn-sm btn-outline-dark">Cerrar historial</button></div>
+        <p id="historialCliente"></p><p id="historialResumen" class="text-secondary"></p>
+        <h3 id="ultimaReparacionTitulo" class="h6">Última reparación</h3>
+        <div id="ultimaReparacion"></div>
+        <details id="todasReparaciones">
+        <summary id="resumenReparaciones">Ver todas las reparaciones</summary>
+        <div id="historialFiltros" class="row g-3 mb-3">
+            <div class="col-md-6"><label for="historialEquipo" class="form-label">Equipo</label><select id="historialEquipo" class="form-select"><option value="">Todos los equipos</option></select></div>
+            <div class="col-md-6"><label for="buscarHistorial" class="form-label">Buscar en el historial</label><input id="buscarHistorial" type="search" class="form-control" maxlength="100" placeholder="Orden, marca, serie, falla, estado o técnico…"></div>
+        </div>
+        <p id="historialMensaje" class="form-text" role="status" aria-live="polite"></p>
+        <div id="historialOrdenes"></div>
+        <div class="d-flex gap-2 align-items-center flex-wrap mt-3">
+            <button id="historialAnterior" type="button" class="btn btn-sm btn-outline-dark">Anterior</button>
+            <span id="historialPagina"></span>
+            <button id="historialSiguiente" type="button" class="btn btn-sm btn-outline-dark">Siguiente</button>
+        </div>
+        </details>
+        <p id="historialCarga" class="form-text" role="status"></p>
+        <button id="historialReintentar" type="button" class="btn btn-sm btn-outline-primary" hidden>Reintentar</button>
+    </div></section>
+</div>
+{% include 'editar_diagnostico.html' %}
+<script src="{{ url_for('static', path='/js/clientes-historial.js') }}?v=selector-deslizante-20260928"></script>
 {% endblock %}

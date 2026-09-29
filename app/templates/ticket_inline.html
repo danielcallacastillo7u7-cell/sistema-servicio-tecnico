@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ ticket_orden.numero_orden }}</title>
+<link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}?v=ticket-individual-20260908">
+<style>body { background: #f3f3f3; padding: 12px; } @media print { #ticketImprimible { break-inside: auto!important; page-break-inside: auto!important; } }</style>
+</head><body class="printing-ticket">{% include 'ticket_acciones.html' %}{% include 'ticket_contenido.html' %}</body></html>

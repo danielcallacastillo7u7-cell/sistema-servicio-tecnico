@@ -1,3 +1,4 @@
+from app.services.confirmaciones import redireccion_confirmada
 from pathlib import Path
 
 import re
@@ -23,16 +24,6 @@ CLAVE_ELIMINACION = os.getenv("CLAVE_ELIMINACION", "SERVITECH2026")
 
 
 def contexto_ajustes(db: Session, error: str | None = None):
-    cancelaciones = (
-        db.query(CancelacionOrden)
-        .options(
-            joinedload(CancelacionOrden.orden)
-            .joinedload(OrdenServicio.equipo)
-            .joinedload(Equipo.cliente)
-        )
-        .order_by(CancelacionOrden.id.desc())
-        .all()
-    )
     trabajadores = (
         db.query(Trabajador)
         .filter(Trabajador.activo.is_(True))
@@ -41,7 +32,6 @@ def contexto_ajustes(db: Session, error: str | None = None):
     )
     return {
         "seccion": "ajustes",
-        "cancelaciones": cancelaciones,
         "trabajadores": trabajadores,
         "error": error,
     }
@@ -78,7 +68,7 @@ def agregar_trabajador(
         db.add(Trabajador(nombre=nombre))
     db.commit()
 
-    return RedirectResponse(url="/ajustes", status_code=303)
+    return redireccion_confirmada("/ajustes", "Técnico guardado correctamente.")
 
 
 @router.post("/trabajadores/{trabajador_id}/eliminar")
@@ -107,4 +97,4 @@ def eliminar_trabajador(
 
     db.delete(trabajador)
     db.commit()
-    return RedirectResponse(url="/ajustes", status_code=303)
+    return redireccion_confirmada("/ajustes", "Técnico eliminado correctamente.")
