@@ -14,14 +14,14 @@
     <link rel="stylesheet" href="{{ url_for('static', path='/css/interface.css') }}?v=editor-modal-20260927">
     <link rel="stylesheet" href="{{ url_for('static', path='/css/confirmaciones.css') }}?v=top-2">
     <script src="{{ url_for('static', path='/js/confirmaciones.js') }}?v=dialog-3"></script>
-<link rel="stylesheet" href="/static/css/reporte-instalacion.css?v=carta-2"><script src="/static/js/reporte-instalacion.js?v=1"></script><link rel="stylesheet" href="/static/css/servicios-selector.css?v=1"></head>
+<link rel="stylesheet" href="/static/css/reporte-instalacion.css?v=carta-2"><script src="/static/js/reporte-instalacion.js?v=1"></script><link rel="stylesheet" href="/static/css/servicios-selector.css?v=1"><link rel="stylesheet" href="/static/css/responsive-layout.css?v=3"></head>
 <body><div class="app-layout">
 <aside class="sidebar">
     <a class="brand brand-logo" href="/">
         <img src="{{ url_for('static', path='/images/logo-servitech.png') }}" alt="ServiTech - Suministros de cómputo">
     </a>
     <p class="menu-label">MENÚ PRINCIPAL</p>
-    <nav class="nav flex-column gap-2">
+    <nav id="appNavigation" aria-label="Menú principal" class="nav flex-column gap-2">
         <a class="nav-link {% if seccion == 'inicio' %}active{% endif %}" href="/"><i class="bi bi-house-door"></i> Inicio</a>
         <a class="nav-link {% if seccion == 'clientes' %}active{% endif %}" href="/clientes"><i class="bi bi-people"></i> Clientes</a>
         <a class="nav-link {% if seccion in ['ordenes', 'camaras'] %}active{% endif %}" href="/ordenes"><i class="bi bi-file-earmark-text"></i> Servicios</a>
@@ -47,5 +47,5 @@
     <section class="content-area">{% block content %}{% endblock %}</section>
     <footer class="app-footer">© 2026 <strong>ServiTech</strong> · Sistema de Servicio Técnico</footer>
 </main>
-</div><script src="{{ url_for('static', path='/js/app.js') }}?v=confirmacion-20260926"></script><script src="{{ url_for('static', path='/js/cliente-documento.js') }}?v=confirmacion-20260926"></script><script src="{{ url_for('static', path='/js/orden-equipos.js') }}?v=productos-multiples-20260928"></script></body>
+</div><script src="{{ url_for('static', path='/js/app.js') }}?v=confirmacion-20260926"></script><script src="{{ url_for('static', path='/js/cliente-documento.js') }}?v=confirmacion-20260926"></script><script src="{{ url_for('static', path='/js/orden-equipos.js') }}?v=productos-multiples-20260928"></script><script src="/static/js/responsive-layout.js?v=3"></script></body>
 </html>
