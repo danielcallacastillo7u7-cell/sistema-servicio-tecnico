@@ -93,7 +93,9 @@
 </div>
 
 <div class="d-flex gap-2 flex-wrap my-3"><a class="btn btn-outline-success" href="/ordenes/no-reparados.xlsx">Descargar Excel de no reparados</a></div>
-{% if estado_seleccionado %}
+{% if estado_seleccionado == "Todas" %}
+{% include "todas_ordenes_modal.html" %}
+{% elif estado_seleccionado %}
 <div class="status-modal" role="dialog" aria-modal="true"><a class="status-modal-backdrop" href="/"></a>
     <div class="status-modal-panel">
         <div class="status-modal-header">

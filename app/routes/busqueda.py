@@ -1,7 +1,7 @@
 from datetime import timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import obtener_db
@@ -23,7 +23,11 @@ def formatear_fecha_peru(fecha):
 
 @router.get("/buscar")
 def buscar(q: str = Query(min_length=2, max_length=100), db: Session = Depends(obtener_db)):
-    patron = f"%{q.strip()}%"
+    # Each pasted word can match a different part of the client/equipment.
+    palabras = q.split()
+    if not palabras:
+        return []
+    patrones = ["%" + palabra.replace("/", "//").replace("%", "/%").replace("_", "/_") + "%" for palabra in palabras]
     ordenes = (
         db.query(OrdenServicio)
         .join(OrdenServicio.equipo)
@@ -34,23 +38,24 @@ def buscar(q: str = Query(min_length=2, max_length=100), db: Session = Depends(o
             joinedload(OrdenServicio.diagnostico),
         )
         .filter(
-            or_(
-                OrdenServicio.numero_orden.ilike(patron),
-                Cliente.nombres.ilike(patron),
-                Cliente.apellidos.ilike(patron),
-                Cliente.dni_ruc.ilike(patron),
-                Cliente.telefono.ilike(patron),
+            and_(*(or_(
+                OrdenServicio.numero_orden.ilike(patron, escape="/"),
+                Cliente.nombres.ilike(patron, escape="/"),
+                Cliente.apellidos.ilike(patron, escape="/"),
+                Cliente.dni_ruc.ilike(patron, escape="/"),
+                Cliente.telefono.ilike(patron, escape="/"),
                 OrdenServicio.recepciones.any(or_(
-                    OrdenEquipo.numero_serie.ilike(patron), OrdenEquipo.marca.ilike(patron),
-                    OrdenEquipo.modelo.ilike(patron), OrdenEquipo.tipo.ilike(patron),
+                    OrdenEquipo.numero_serie.ilike(patron, escape="/"), OrdenEquipo.marca.ilike(patron, escape="/"),
+                    OrdenEquipo.modelo.ilike(patron, escape="/"), OrdenEquipo.tipo.ilike(patron, escape="/"),
                 )),
-                Equipo.numero_serie.ilike(patron),
-                Equipo.marca.ilike(patron),
-                Equipo.modelo.ilike(patron),
-                Diagnostico.falla_encontrada.ilike(patron),
-                Diagnostico.solucion_recomendada.ilike(patron),
-                Diagnostico.repuestos_necesarios.ilike(patron),
-            )
+                Equipo.tipo.ilike(patron, escape="/"),
+                Equipo.numero_serie.ilike(patron, escape="/"),
+                Equipo.marca.ilike(patron, escape="/"),
+                Equipo.modelo.ilike(patron, escape="/"),
+                Diagnostico.falla_encontrada.ilike(patron, escape="/"),
+                Diagnostico.solucion_recomendada.ilike(patron, escape="/"),
+                Diagnostico.repuestos_necesarios.ilike(patron, escape="/"),
+            ) for patron in patrones))
         )
         .order_by(OrdenServicio.id.desc())
         .limit(10)

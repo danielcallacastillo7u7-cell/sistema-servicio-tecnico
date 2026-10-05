@@ -1,6 +1,7 @@
 const buscador = document.querySelector("#buscadorGlobal");
 const resultados = document.querySelector("#resultadosBusqueda");
 let temporizador;
+let busquedaVersion = 0;
 let ordenesEncontradas = new Map();
 
 const escaparHtml = valor => String(valor ?? "").replace(/[&<>'"]/g, caracter => ({
@@ -26,18 +27,27 @@ function abrirDetalleOrden(item) {
 if (buscador && resultados) {
     buscador.addEventListener("input", () => {
         clearTimeout(temporizador);
-        const consulta = buscador.value.trim();
+        const version = ++busquedaVersion;
+        const consulta = buscador.value.replace(/\s+/g, " ").trim();
+        resultados.innerHTML = "";
+        ordenesEncontradas.clear();
         if (consulta.length < 2) {
             resultados.innerHTML = "";
             return;
         }
         temporizador = setTimeout(async () => {
+            try {
             const respuesta = await fetch(`/api/buscar?q=${encodeURIComponent(consulta)}`);
+            if (!respuesta.ok) throw new Error("Búsqueda no disponible");
             const datos = await respuesta.json();
+            if (version !== busquedaVersion) return;
             ordenesEncontradas = new Map(datos.map(item => [String(item.id), item]));
             resultados.innerHTML = datos.length
                 ? datos.map(item => `<div class="search-item detailed"><div><strong>${escaparHtml(item.numero)}</strong><small>${escaparHtml(item.estado)}</small></div><div><span>${escaparHtml(item.cliente)}</span><span>${escaparHtml(item.equipo)}</span></div><button type="button" class="btn btn-sm btn-outline-primary detail-button" data-order-detail="${escaparHtml(item.id)}"><i class="bi bi-eye"></i> Detalles</button></div>`).join("")
                 : '<p class="text-secondary mb-0">No se encontraron órdenes.</p>';
+            } catch (error) {
+                if (version === busquedaVersion) resultados.innerHTML = '<p class="text-secondary mb-0">No se pudo buscar. Intenta nuevamente.</p>';
+            }
         }, 250);
     });
     resultados.addEventListener("click", evento => {
