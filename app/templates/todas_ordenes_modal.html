@@ -1,13 +1,44 @@
-<link rel="stylesheet" href="/static/css/todas-ordenes.css?v=1">
+<link rel="stylesheet" href="/static/css/todas-ordenes.css?v=2">
 <dialog id="todasOrdenes" aria-labelledby="todasTitulo">
-<header class="all-header"><span class="all-symbol"><i class="bi bi-file-earmark-text"></i></span><div><small>REGISTRO DE ÓRDENES</small><h2 id="todasTitulo">Todas las órdenes</h2><p>Consulta, busca y administra las órdenes registradas.</p></div><a class="all-close" href="/" aria-label="Cerrar todas las órdenes">×</a></header>
-<div class="all-filters"><label class="all-search"><i class="bi bi-search"></i><input id="allSearch" type="search" placeholder="Buscar por número, cliente o equipo…" aria-label="Buscar órdenes" autofocus></label><select id="allState" aria-label="Filtrar por estado"><option value="">Todos los estados</option>{% for e in ['Recibido','Diagnosticado','En reparación','Listo para entrega','Entregado','Cancelado'] %}<option>{{ e }}</option>{% endfor %}</select><select id="allSort" aria-label="Ordenar por fecha"><option value="desc">Fecha (más reciente)</option><option value="asc">Fecha (más antigua)</option></select></div>
-<div class="all-list" id="allList">
-{% for o in ordenes_estado %}<article class="all-order" data-state="{{ o.estado }}" data-date="{{ o.fecha_ingreso.isoformat() }}" data-id="{{ o.id }}">
-<span class="all-avatar"><i class="bi bi-person"></i></span><div class="all-copy"><h3>{{ o.numero_orden }}</h3><strong>{{ o.equipo.cliente.nombres }} {{ o.equipo.cliente.apellidos }}</strong><p><i class="bi bi-laptop"></i> {% for e in o.equipos_recibidos %}{{ e.tipo }} {{ e.marca }} {{ e.modelo or '' }}{% if not loop.last %} · {% endif %}{% endfor %}</p><small><i class="bi bi-calendar-event"></i> {{ o.fecha_ingreso.strftime('%d/%m/%Y') }} · {{ o.estado }}</small></div>
-<div class="all-status"><span>{{ o.estado }}</span><small class="all-age"></small></div>
-<details class="all-actions"><summary aria-label="Acciones de {{ o.numero_orden }}">•••</summary><div><a href="/ordenes?ticket={{ o.id }}">Ver ticket</a><a href="/ordenes#ordenesRegistradas">Administrar órdenes</a></div></details>
-</article>{% endfor %}
-<p id="allEmpty" hidden>No se encontraron órdenes con estos filtros.</p>
-</div><footer class="all-footer"><strong id="allCount" role="status" aria-live="polite"></strong><span id="allRange"></span><button id="allPrev" type="button" aria-label="Página anterior">‹</button><button id="allNext" type="button" aria-label="Página siguiente">›</button></footer>
-</dialog><script src="/static/js/todas-ordenes.js?v=1"></script>
+    <header class="all-header"><span class="all-symbol"><i class="bi bi-file-earmark-text"></i></span>
+        <div><small>REGISTRO DE ÓRDENES</small>
+            <h2 id="todasTitulo">Todas las órdenes</h2>
+            <p>Consulta, busca y administra las órdenes registradas.</p>
+        </div><a class="all-close" href="/" aria-label="Cerrar todas las órdenes">×</a>
+    </header>
+    <div class="all-filters"><label class="all-search"><i class="bi bi-search"></i><input id="allSearch" type="search"
+                placeholder="Buscar por número, cliente o equipo…" aria-label="Buscar órdenes" autofocus></label><select
+            id="allState" aria-label="Filtrar por estado">
+            <option value="">Todos los estados</option>{% for e in ['Recibido','Diagnosticado','En reparación','Listo
+            para entrega','Entregado','Cancelado'] %}<option>{{ e }}</option>{% endfor %}
+        </select><select id="allSort" aria-label="Ordenar por fecha">
+            <option value="desc">Fecha (más reciente)</option>
+            <option value="asc">Fecha (más antigua)</option>
+        </select></div>
+    <div class="all-list" id="allList">
+        {% for o in ordenes_estado %}<article class="all-order" data-state="{{ o.estado }}"
+            data-date="{{ o.fecha_ingreso.isoformat() }}" data-id="{{ o.id }}" tabindex="0" role="button" aria-label="Ver detalles de {{ o.numero_orden }}">
+            <span class="all-avatar"><i class="bi bi-person"></i></span>
+            <div class="all-copy">
+                <h3>{{ o.numero_orden }}</h3><strong>{{ o.equipo.cliente.nombres }} {{ o.equipo.cliente.apellidos
+                    }}</strong>
+                <p><i class="bi bi-laptop"></i> {% for e in o.equipos_recibidos %}{{ e.tipo }} {{ e.marca }} {{ e.modelo
+                    or '' }}{% if not loop.last %} · {% endif %}{% endfor %}</p><small><i
+                        class="bi bi-calendar-event"></i> {{ o.fecha_ingreso.strftime('%d/%m/%Y') }} · {{ o.estado
+                    }}</small>
+            </div>
+            <div class="all-status"><span>{{ o.estado }}</span><small class="all-age"></small></div>
+            <details class="all-actions">
+                <summary aria-label="Acciones de {{ o.numero_orden }}">•••</summary>
+                <div><a href="/ordenes?ticket={{ o.id }}">Ver ticket</a><a
+                        href="/ordenes#ordenesRegistradas">Administrar órdenes</a></div>
+            </details>
+        </article>{% include "orden_ficha.html" %}{% endfor %}
+        <p id="allEmpty" hidden>No se encontraron órdenes con estos filtros.</p>
+    </div>
+    <footer class="all-footer"><strong id="allCount" role="status" aria-live="polite"></strong><span
+            id="allRange"></span><button id="allPrev" type="button" aria-label="Página anterior">‹</button><button
+            id="allNext" type="button" aria-label="Página siguiente">›</button></footer>
+</dialog>
+<dialog id="ordenFicha" aria-label="Información de la orden"><button type="button" class="ficha-close" aria-label="Volver a todas las órdenes">×</button><div id="ordenFichaContenido"></div></dialog>
+<script src="/static/js/todas-ordenes.js?v=2"></script>
