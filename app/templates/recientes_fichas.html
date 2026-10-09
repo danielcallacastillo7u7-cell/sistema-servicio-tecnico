@@ -1,0 +1,7 @@
+<link rel="stylesheet" href="/static/css/todas-ordenes.css?v=4">
+{% macro dato(k,v) %}<div><dt>{{ k }}</dt><dd>{{ v or 'No registrado' }}</dd></div>{% endmacro %}
+{% for o in ultimas_ordenes %}{% set ficha_prefix='recent-orden-' %}{% include "orden_ficha.html" %}{% endfor %}
+{% for r in ultimas_instalaciones %}{% set instalaciones=true %}{% set d=r.datos %}{% set fecha=r.fecha_registro %}{% set url='/camaras/' ~ r.id ~ '/reporte' %}{% set ficha_prefix='recent-instalacion-' %}{% include "servicio_ficha.html" %}{% endfor %}
+{% for r in ultimos_pagos %}{% set instalaciones=false %}{% set d=r.datos %}{% set fecha=r.fecha %}{% set url='/pagos-internet/' ~ r.id ~ '/ticket' %}{% set ficha_prefix='recent-pago-' %}{% include "servicio_ficha.html" %}{% endfor %}
+<dialog id="recentFicha" aria-label="Detalle del servicio"><button class="ficha-close" type="button" aria-label="Cerrar detalle">×</button><div id="recentContenido"></div></dialog>
+<script src="/static/js/recientes-fichas.js?v=1"></script>

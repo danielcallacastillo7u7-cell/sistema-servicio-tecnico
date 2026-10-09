@@ -1,5 +1,5 @@
 {% macro dato(titulo, valor) %}<div><dt>{{ titulo }}</dt><dd>{{ valor or 'No registrado' }}</dd></div>{% endmacro %}
-<template id="ficha-{{ o.id }}">
+<template id="{{ ficha_prefix|default("ficha-") }}{{ o.id }}">
 <header class="ficha-header"><small>DETALLE DE LA ORDEN</small><h2>{{ o.numero_orden }}</h2><span>{{ o.estado }}</span><p>Ingreso: {{ o.fecha_ingreso | pago_fecha }}</p></header>
 <div class="ficha-body">
 <section><h3>Datos del cliente</h3><dl>{{ dato('Nombre completo', o.equipo.cliente.nombres ~ ' ' ~ o.equipo.cliente.apellidos) }}{{ dato('DNI / RUC', o.equipo.cliente.dni_ruc) }}{{ dato('Celular', o.equipo.cliente.telefono) }}{{ dato('Técnico responsable', o.tecnico_responsable) }}</dl></section>

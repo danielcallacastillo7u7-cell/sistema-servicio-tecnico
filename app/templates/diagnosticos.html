@@ -1,16 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Diagnósticos | ServiTech{% endblock %}{% block page_title %}Diagnósticos técnicos{% endblock %}
+{% block title %}Diagnósticos | ServiTech{% endblock %}{% block page_title %}Diagnósticos <span class="diagnosis-red">técnicos</span>{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Registra y gestiona los diagnósticos de las órdenes del taller.</p>{% endblock %}
+{% block header_extra %}<div class="diagnosis-summary"><span class="diagnosis-tools"><i class="bi bi-tools"></i></span><div><strong>Equipos pendientes de diagnóstico</strong><b>{{ ordenes_pendientes|length }}</b><span class="diagnosis-bar"></span></div><svg viewBox="0 0 80 50" aria-hidden="true"><path d="M1 43C17 43 16 14 29 18S45 43 57 35 67 9 78 4" fill="none" stroke="currentColor"/></svg></div>{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/diagnosticos-design.css?v=20261009">{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 {% if ordenes_pendientes %}
-<div class="diagnosis-alert mb-4"><i class="bi bi-bell-fill"></i>
-    <div><strong>{{ ordenes_pendientes|length }} equipo{% if ordenes_pendientes|length != 1 %}s{% endif %} pendiente{%
-            if ordenes_pendientes|length != 1 %}s{% endif %} de diagnóstico</strong><span>Los equipos recibidos aparecen
-            aquí hasta completar su revisión técnica.</span></div>
-</div>
-<div class="card panel-card panel-neutral-top mb-4">
+<div class="card panel-card panel-neutral-top mb-4 diagnosis-register">
     <div class="card-body p-4">
-        <h2 class="section-title">Registrar diagnóstico</h2>
+        <div class="diagnosis-heading"><h2 class="section-title"><i class="bi bi-file-earmark-medical"></i> Registrar diagnóstico</h2><button class="diagnosis-clear" type="button"><i class="bi bi-trash"></i> Limpiar campos</button></div>
         <form method="post" action="/diagnosticos" enctype="multipart/form-data">
             <div class="row g-3">
                 <div class="col-12"><label class="form-label">Orden pendiente</label><select name="orden_id"
@@ -21,13 +19,13 @@
                         </option>{% endfor %}
                     </select></div>
                 <div class="col-md-6"><label class="form-label">Falla encontrada</label><textarea
-                        name="falla_encontrada" class="form-control" rows="3" required></textarea></div>
+                        placeholder="Describe la falla o problema detectado..." name="falla_encontrada" class="form-control" rows="3" required></textarea></div>
                 <div class="col-md-6"><label class="form-label">Solución recomendada</label><textarea
-                        name="solucion_recomendada" class="form-control" rows="3" required></textarea></div>
-                <div class="col-md-8"><label class="form-label">Repuestos necesarios</label><textarea
-                        name="repuestos_necesarios" class="form-control" rows="2"></textarea></div>
-                <div class="col-md-4"><label class="form-label">Costo estimado (S/)</label><input name="costo_estimado"
-                        type="number" min="0" max="99999999.99" step="0.01" value="0.00" class="form-control" required>
+                        placeholder="Indica la solución recomendada..." name="solucion_recomendada" class="form-control" rows="3" required></textarea></div>
+                <div class="col-md-10 diagnosis-parts"><label class="form-label">Repuestos necesarios</label><textarea
+                        placeholder="Lista los repuestos necesarios (si aplica)..." name="repuestos_necesarios" class="form-control" rows="1"></textarea></div>
+                <div class="col-md-2 diagnosis-cost"><label class="form-label">Costo estimado (S/)</label><div class="diagnosis-cost-input"><i class="bi bi-coin"></i><input name="costo_estimado"
+                        type="number" min="0" max="99999999.99" step="0.01" value="0.00" class="form-control" required></div>
                 </div>
                 <div class="col-12"><label class="form-label" for="imagenesDiagnostico">Imágenes de comprobación
                         <small>(opcional)</small></label><input id="imagenesDiagnostico" name="imagenes" type="file"
@@ -35,16 +33,16 @@
                     <div class="image-selection-heading"><small class="form-text">Selecciona imágenes una o varias
                             veces. JPG, PNG o WebP; máximo 4 MB cada una.</small><strong id="contadorImagenes">0 de 5
                             imágenes</strong></div>
-                    <div id="vistaPreviaImagenes" class="diagnostic-image-preview" aria-live="polite">
-                        <p>Las imágenes seleccionadas aparecerán aquí.</p>
+                    <button type="button" class="diagnosis-drop" onclick="document.getElementById('imagenesDiagnostico').click()"><i class="bi bi-cloud-arrow-up"></i><span><strong>Arrastra y suelta las imágenes aquí</strong><small>o haz clic para seleccionar</small></span></button><div id="vistaPreviaImagenes" class="diagnostic-image-preview" aria-live="polite">
+
                     </div>
                 </div>
-            </div><button class="btn btn-primary mt-3">Guardar diagnóstico</button>
+            </div><button class="btn btn-primary mt-3 diagnosis-save"><i class="bi bi-floppy"></i> Guardar diagnóstico</button>
         </form>
     </div>
 </div>
 {% else %}<div class="alert alert-info">No hay órdenes pendientes de diagnóstico. Puedes crear una en <a
         href="/ordenes">Órdenes</a>.</div>{% endif %}
-{% include 'cancelaciones.html' %}
+<div class="diagnosis-cancelled">{% include 'cancelaciones.html' %}</div>
 {% include 'editar_diagnostico.html' %}
 {% endblock %}

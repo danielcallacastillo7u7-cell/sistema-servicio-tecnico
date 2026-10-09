@@ -1,15 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Inicio | ServiTech{% endblock %}{% block page_title %}Panel principal{% endblock %}
-{% block page_subtitle %}<p class="page-subtitle">Bienvenido al sistema de gestión del taller</p>{% endblock %}
+{% block title %}Inicio | ServiTech{% endblock %}{% block page_title %}Panel <span>principal</span>{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Sistema de gestión del taller de cómputo</p>{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', path='/css/inicio.css') }}?v=20260908">{% endblock %}
-{% block header_extra %}<div class="home-summary-cards"><a class="home-total" href="/pagos-internet"><span class="home-mini-icon"><i class="bi bi-wifi" aria-hidden="true"></i></span><span><strong>Pagos de internet</strong><b>{{ total_pagos_internet }}</b><small>Total de pagos registrados</small></span></a><a class="home-total" href="/camaras/reportes"><span class="home-mini-icon"><i class="bi bi-camera-video" aria-hidden="true"></i></span><span><strong>Instalaciones</strong><b>{{ total_instalaciones }}</b><small>Registro completo</small></span></a>
+{% block header_extra %}<div class="dashboard-today"><i class="bi bi-calendar-event"></i><div>Hoy<strong id="dashboardToday"></strong></div></div><div class="dashboard-brand"><img src="/static/images/local-servitech.png" alt="Local de ServiTech"></div>{% endblock %}
+{% block content %}
+<div class="home-summary-cards"><a class="home-total" href="/?servicio=pagos"><span class="home-mini-icon"><i class="bi bi-wifi" aria-hidden="true"></i></span><span><strong>Pagos de internet</strong><b>{{ total_pagos_internet }}</b><small>Total de pagos registrados</small></span></a><a class="home-total" href="/?servicio=instalaciones"><span class="home-mini-icon"><i class="bi bi-camera-video" aria-hidden="true"></i></span><span><strong>Instalaciones</strong><b>{{ total_instalaciones }}</b><small>Registro completo</small></span></a>
 <a class="home-total" href="/?estado=Todas">
     <span class="home-mini-icon"><i class="bi bi-collection" aria-hidden="true"></i></span>
     <span><strong>Todas las órdenes</strong><b>{{ total_ordenes }}</b><small>Registro completo</small></span>
     <i class="bi bi-chevron-right" aria-hidden="true"></i>
 </a></div>
-{% endblock %}
-{% block content %}
+
 <link rel="stylesheet" href="/static/css/ultimos-servicios.css?v=1">
 
 <div class="home-status-row mb-4">
@@ -32,7 +33,7 @@
 <div class="card panel-card orders-panel">
     <div class="card-body p-4">
         <div class="panel-heading">
-            <h2 class="section-title"><i class="bi bi-file-earmark-text"></i> Últimos servicios</h2><a id="serviciosVerTodos"
+            <h2 class="section-title"><i class="bi bi-file-earmark-text"></i> Últimos servicios</h2><p class="recent-subtitle">Consulta y gestiona los servicios más recientes del taller</p><a id="serviciosVerTodos"
                 class="btn btn-sm btn-outline-primary" href="/?estado=Todas">Ver todos <i class="bi bi-arrow-right"></i></a>
         </div>
         <div class="ultimos-selector" role="tablist" aria-label="Tipo de servicio">
@@ -53,19 +54,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for orden in ultimas_ordenes %}<tr>
-                        <td><a href="/ordenes?ticket={{ orden.id }}">{{ orden.numero_orden }}</a></td>
+                    {% for orden in ultimas_ordenes %}<tr data-recent-ficha="recent-orden-{{ orden.id }}" tabindex="0" aria-label="Ver detalles de {{ orden.numero_orden }}">
+                        <td><button type="button" class="btn btn-link p-0">{{ orden.numero_orden }}</button></td>
                         <td>{{ orden.equipo.cliente.nombres }} {{ orden.equipo.cliente.apellidos }}</td>
                         <td>{% for equipo in orden.equipos_recibidos %}{{ equipo.tipo }} {{ equipo.marca }} {{ equipo.modelo or "" }}{% if not loop.last %} · {% endif %}{% endfor %}</td>
                         <td><span class="order-status" data-status="{{ orden.estado }}">{{ orden.estado }}</span></td>
-                        <td>{% if orden.diagnostico %}<details class="diagnosis-popover">
-                                <summary><i class="bi bi-eye"></i> Ver diagnóstico</summary>
-                                <div><strong>Especificaciones</strong><span><b>Falla:</b> {{
-                                        orden.diagnostico.falla_encontrada }}</span><span><b>Solución:</b> {{
-                                        orden.diagnostico.solucion_recomendada }}</span><span><b>Repuestos:</b> {{
-                                        orden.diagnostico.repuestos_necesarios or "Ninguno" }}</span><span><b>Costo:</b>
-                                        S/ {{ "%.2f"|format(orden.diagnostico.costo_estimado) }}</span></div>
-                            </details>{% else %}<span class="text-secondary">Pendiente</span>{% endif %}</td>
+                        <td>{% if orden.diagnostico %}<button type="button" class="btn btn-link p-0">Ver diagnóstico</button>{% else %}<span class="text-secondary">Pendiente</span>{% endif %}</td>
                         <td>{{ orden.fecha_ingreso.strftime("%d/%m/%Y") }}</td>
                     </tr>{% else %}<tr>
                         <td colspan="6">
@@ -79,12 +73,12 @@
         </div>
         <div id="ultimos-instalaciones" role="tabpanel" aria-labelledby="tab-instalaciones" tabindex="0" class="table-responsive" hidden>
           <table class="table dashboard-table align-middle"><thead><tr><th>Instalación</th><th>Cliente</th><th>Técnico</th><th>Fecha programada</th><th>Hora</th><th></th></tr></thead><tbody>
-          {% for i in ultimas_instalaciones %}<tr><td>{{ i.numero }}</td><td>{{ i.datos.nombres }} {{ i.datos.apellidos }}</td><td>{{ i.tecnico }}</td><td>{{ i.fecha_instalacion.strftime('%d/%m/%Y') }}</td><td>{{ i.datos.hora_instalacion or 'Sin hora registrada' }}</td><td><a href="/camaras/{{ i.id }}/reporte">Ver reporte</a></td></tr>
+          {% for i in ultimas_instalaciones %}<tr data-recent-ficha="recent-instalacion-{{ i.id }}" tabindex="0" aria-label="Ver detalles de {{ i.numero }}"><td>{{ i.numero }}</td><td>{{ i.datos.nombres }} {{ i.datos.apellidos }}</td><td>{{ i.tecnico }}</td><td>{{ i.fecha_instalacion.strftime('%d/%m/%Y') }}</td><td>{{ i.datos.hora_instalacion or 'Sin hora registrada' }}</td><td><button type="button" class="btn btn-link p-0">Ver detalles</button></td></tr>
           {% else %}<tr><td colspan="6" class="text-center py-4">Todavía no hay instalaciones registradas.</td></tr>{% endfor %}</tbody></table>
         </div>
         <div id="ultimos-pagos" role="tabpanel" aria-labelledby="tab-pagos" tabindex="0" class="table-responsive" hidden>
           <table class="table dashboard-table align-middle"><thead><tr><th>Comprobante</th><th>Titular</th><th>Mes pagado</th><th>Total</th><th>Fecha y hora (Perú)</th><th></th></tr></thead><tbody>
-          {% for p in ultimos_pagos %}<tr><td>{{ p.numero }}</td><td>{{ p.datos.titular }}</td><td>{{ p.datos.periodo }}</td><td>S/ {{ '%.2f'|format(p.datos.total|float) }}</td><td>{{ p.fecha|pago_fecha }}</td><td><a href="/pagos-internet/{{ p.id }}/ticket" data-pago-ticket>Ver comprobante</a></td></tr>
+          {% for p in ultimos_pagos %}<tr data-recent-ficha="recent-pago-{{ p.id }}" tabindex="0" aria-label="Ver detalles de {{ p.numero }}"><td>{{ p.numero }}</td><td>{{ p.datos.titular }}</td><td>{{ p.datos.periodo }}</td><td>S/ {{ '%.2f'|format(p.datos.total|float) }}</td><td>{{ p.fecha|pago_fecha }}</td><td><button type="button" class="btn btn-link p-0">Ver detalles</button></td></tr>
           {% else %}<tr><td colspan="6" class="text-center py-4">Todavía no hay pagos de internet registrados.</td></tr>{% endfor %}</tbody></table>
         </div>
         <small class="text-secondary">Los 5 registros más recientes de cada servicio.</small>
@@ -93,7 +87,9 @@
 </div>
 
 <div class="d-flex gap-2 flex-wrap my-3"><a class="btn btn-outline-success" href="/ordenes/no-reparados.xlsx">Descargar Excel de no reparados</a></div>
-{% if estado_seleccionado == "Todas" %}
+{% if servicio_lista %}
+{% include "servicios_lista_modal.html" %}
+{% elif estado_seleccionado == "Todas" %}
 {% include "todas_ordenes_modal.html" %}
 {% elif estado_seleccionado %}
 <div class="status-modal" role="dialog" aria-modal="true"><a class="status-modal-backdrop" href="/"></a>
@@ -134,6 +130,7 @@
     </div>
 </div>
 {% endif %}
+{% include "recientes_fichas.html" %}
 {% include "pago_comprobante_modal.html" %}
-<script src="/static/js/ultimos-servicios.js?v=1"></script>
+<script src="/static/js/ultimos-servicios.js?v=2"></script><script src="/static/js/dashboard-refresh.js?v=2"></script>
 {% endblock %}

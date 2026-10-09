@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Órdenes | ServiTech{% endblock %}{% block page_title %}Nueva orden de servicio{% endblock %}
+{% block title %}Órdenes | ServiTech{% endblock %}{% block page_title %}Nueva orden de <span class="services-red">servicio</span>{% endblock %}
 {% block page_subtitle %}<p class="page-subtitle">Completa el cliente una vez y guarda cada equipo con su propio ticket</p>{% endblock %}
 {% block header_extra %}{% include 'servicios_selector.html' %}{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="/static/css/orden-formulario.css?v=1">{% endblock %}
@@ -24,7 +24,7 @@
             </div>
             <p id="documentoEstado" class="form-text mt-3" role="status" aria-live="polite">Ingresa el DNI o RUC para buscar al cliente.</p>
             <div class="row g-3 mt-2">
-                <div class="col-12"><label for="tecnicoResponsable" class="form-label">Técnico responsable <span
+                <div class="col-md-6"><label for="tecnicoResponsable" class="form-label">Técnico responsable <span
                             class="required">*</span></label><select id="tecnicoResponsable" name="tecnico_responsable" class="form-select"
                         required>
                         <option value="">Selecciona un técnico</option>{% for trabajador in trabajadores %}<option
@@ -76,13 +76,13 @@
             </div><div class="order-form-panel order-problem-panel">
             <h2 class="section-title"><i class="bi bi-file-earmark-text"></i> Problema / servicio solicitado</h2><p class="order-section-help">Describe la falla reportada por el cliente.</p>
             <div class="row g-3">
-                <div class="col-12"><label class="form-label">Falla indicada por el cliente (opcional)</label><textarea name="falla_reportada" placeholder="Describe la falla o problema reportado…" class="form-control"
+                <div class="col-md-6"><label class="form-label">Falla indicada por el cliente (opcional)</label><textarea name="falla_reportada" placeholder="Describe la falla o problema reportado…" class="form-control"
                         rows="3" maxlength="3000"></textarea></div>
-                <div class="col-12 productos-equipo"><label class="form-label">Productos adicionales vendidos <small>(opcional)</small></label><input type="hidden" name="otro_producto_servicio"><div class="productos-equipo-filas"></div><button type="button" class="btn btn-sm btn-outline-primary agregar-producto-equipo mt-2">+ Agregar producto</button></div>
+                <div class="col-md-6 productos-equipo"><label class="form-label">Productos adicionales vendidos <small>(opcional)</small></label><input type="hidden" name="otro_producto_servicio"><div class="productos-equipo-filas"></div><button type="button" class="btn btn-sm btn-outline-primary agregar-producto-equipo mt-2">+ Agregar producto</button></div>
 
             </div>
                     <div class="equipo-acciones mt-3 d-flex flex-wrap gap-2 align-items-center">
-                        <button type="button" class="btn btn-primary guardar-equipo" {% if not trabajadores %}disabled{% endif %}>Guardar y generar ticket</button>
+                        <button type="button" class="btn btn-primary guardar-equipo" {% if not trabajadores %}disabled{% endif %}><i class="bi bi-floppy" aria-hidden="true"></i> Guardar y generar ticket</button>
                         <span class="equipo-estado" role="status">Pendiente de guardar</span>
                     </div>
                     <p class="equipo-error text-danger mt-2" role="alert" hidden></p>

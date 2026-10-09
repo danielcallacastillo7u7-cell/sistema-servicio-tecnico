@@ -1,17 +1,58 @@
 {% extends "base.html" %}
 {% block title %}Reportes de instalaciones | ServiTech{% endblock %}
 {% block page_title %}Reportes de instalaciones{% endblock %}
-{% block page_subtitle %}<p class="page-subtitle">Instalaciones de cámaras y productos vendidos, separados de las reparaciones</p>{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Instalaciones de cámaras y productos vendidos, separados de las
+    reparaciones</p>{% endblock %}
 {% block header_extra %}<a class="btn btn-primary" href="/camaras">Nueva instalación</a>{% endblock %}
 {% block content %}
-<div class="card panel-card mb-4"><div class="card-body p-4"><form onsubmit="this.querySelectorAll('input[type=date]').forEach(x => { if (!x.value) x.disabled=true; })" method="get" class="row g-3 align-items-end">
-<div class="col-md-3"><label class="form-label" for="desde">Instalación desde</label><input id="desde" class="form-control" name="desde" type="date" value="{{ desde or '' }}"></div>
-<div class="col-md-3"><label class="form-label" for="hasta">Instalación hasta</label><input id="hasta" class="form-control" name="hasta" type="date" value="{{ hasta or '' }}"></div>
-<div class="col-md-3"><label for="tecnico" class="form-label">Técnico</label><select id="tecnico" name="tecnico" class="form-select"><option value="">Todos</option>{% for t in tecnicos %}<option {% if t==tecnico %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
-<div class="col-md-3"><button class="btn btn-primary">Filtrar</button> <a class="btn btn-outline-secondary" href="/camaras/reportes">Limpiar</a></div>
-</form></div></div>
-{% set filtros = '?tecnico=' ~ (tecnico|urlencode) ~ ('&desde=' ~ desde.isoformat() if desde else '') ~ ('&hasta=' ~ hasta.isoformat() if hasta else '') %}
-<div class="d-flex justify-content-between mb-3"><span>{{ total }} instalaciones</span><a class="btn btn-outline-primary" href="/camaras/reportes.xlsx{{ filtros }}">Descargar Excel</a></div>
-<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Registro</th><th>Cliente</th><th>Técnico</th><th>Fecha programada</th><th>Fecha de registro</th><th>Reporte</th></tr></thead><tbody>{% for r in registros %}<tr><td>{{ r.numero }}</td><td>{{ r.datos.nombres }} {{ r.datos.apellidos }}<br><small>{{ r.datos.dni_ruc }}</small></td><td>{{ r.tecnico }}</td><td>{{ r.fecha_instalacion.strftime('%d/%m/%Y') }}</td><td>{{ r.fecha_registro|fecha_instalacion_local }}</td><td><a class="btn btn-sm btn-outline-primary" href="/camaras/{{ r.id }}/reporte">Ver reporte</a></td></tr>{% else %}<tr><td colspan="6">No hay instalaciones para estos filtros.</td></tr>{% endfor %}</tbody></table></div>
-<div class="d-flex gap-3 align-items-center">{% if pagina>1 %}<a href="/camaras/reportes{{ filtros }}&pagina={{ pagina-1 }}">Anterior</a>{% endif %}<span>Página {{ pagina }} de {{ paginas }}</span>{% if pagina<paginas %}<a href="/camaras/reportes{{ filtros }}&pagina={{ pagina+1 }}">Siguiente</a>{% endif %}</div>
+<div class="card panel-card mb-4">
+    <div class="card-body p-4">
+        <form onsubmit="this.querySelectorAll('input[type=date]').forEach(x => { if (!x.value) x.disabled=true; })"
+            method="get" class="row g-3 align-items-end">
+            <div class="col-md-3"><label class="form-label" for="desde">Instalación desde</label><input id="desde"
+                    class="form-control" name="desde" type="date" value="{{ desde or '' }}"></div>
+            <div class="col-md-3"><label class="form-label" for="hasta">Instalación hasta</label><input id="hasta"
+                    class="form-control" name="hasta" type="date" value="{{ hasta or '' }}"></div>
+            <div class="col-md-3"><label for="tecnico" class="form-label">Técnico</label><select id="tecnico"
+                    name="tecnico" class="form-select">
+                    <option value="">Todos</option>{% for t in tecnicos %}<option {% if t==tecnico %}selected{% endif
+                        %}>{{ t }}</option>{% endfor %}
+                </select></div>
+            <div class="col-md-3"><button class="btn btn-primary">Filtrar</button> <a class="btn btn-outline-secondary"
+                    href="/camaras/reportes">Limpiar</a></div>
+        </form>
+    </div>
+</div>
+{% set filtros = '?tecnico=' ~ (tecnico|urlencode) ~ ('&desde=' ~ desde.isoformat() if desde else '') ~ ('&hasta=' ~
+hasta.isoformat() if hasta else '') %}
+<div class="d-flex justify-content-between mb-3"><span>{{ total }} instalaciones</span><a
+        class="btn btn-outline-primary" href="/camaras/reportes.xlsx{{ filtros }}">Descargar Excel</a></div>
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Registro</th>
+                <th>Cliente</th>
+                <th>Técnico</th>
+                <th>Fecha programada</th>
+                <th>Fecha de registro</th>
+                <th>Reporte</th>
+            </tr>
+        </thead>
+        <tbody>{% for r in registros %}<tr>
+                <td>{{ r.numero }}</td>
+                <td>{{ r.datos.nombres }} {{ r.datos.apellidos }}<br><small>{{ r.datos.dni_ruc }}</small></td>
+                <td>{{ r.tecnico }}</td>
+                <td>{{ r.fecha_instalacion.strftime('%d/%m/%Y') }}</td>
+                <td>{{ r.fecha_registro|fecha_instalacion_local }}</td>
+                <td><a class="btn btn-sm btn-outline-primary" href="/camaras/{{ r.id }}/reporte">Ver reporte</a></td>
+            </tr>{% else %}<tr>
+                <td colspan="6">No hay instalaciones para estos filtros.</td>
+            </tr>{% endfor %}</tbody>
+    </table>
+</div>
+<div class="d-flex gap-3 align-items-center">{% if pagina>1 %}<a
+        href="/camaras/reportes{{ filtros }}&pagina={{ pagina-1 }}">Anterior</a>{% endif %}<span>Página {{ pagina }} de
+        {{ paginas }}</span>{% if pagina<paginas %}<a href="/camaras/reportes{{ filtros }}&pagina={{ pagina+1 }}">
+        Siguiente</a>{% endif %}</div>
 {% endblock %}

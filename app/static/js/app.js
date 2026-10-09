@@ -9,6 +9,7 @@ const escaparHtml = valor => String(valor ?? "").replace(/[&<>'"]/g, caracter =>
 })[caracter]);
 
 function abrirDetalleOrden(item) {
+    if (item.reporte_url) { window.ServiInstallationReport.open(item.reporte_url); return; }
     const evidencias = item.especificaciones?.imagenes?.length
         ? `<div class="detail-evidence"><h4>Imágenes de comprobación</h4><div class="evidence-gallery">${item.especificaciones.imagenes.map((imagen, indice) => `<a href="${escaparHtml(imagen.url)}" target="_blank" rel="noopener" title="Abrir imagen ${indice + 1}"><img src="${escaparHtml(imagen.url)}" alt="Comprobante ${indice + 1}: ${escaparHtml(imagen.nombre)}" loading="lazy"></a>`).join("")}</div></div>`
         : '<p class="detail-no-evidence">No se adjuntaron imágenes de comprobación.</p>';
@@ -44,7 +45,7 @@ if (buscador && resultados) {
             ordenesEncontradas = new Map(datos.map(item => [String(item.id), item]));
             resultados.innerHTML = datos.length
                 ? datos.map(item => `<div class="search-item detailed"><div><strong>${escaparHtml(item.numero)}</strong><small>${escaparHtml(item.estado)}</small></div><div><span>${escaparHtml(item.cliente)}</span><span>${escaparHtml(item.equipo)}</span></div><button type="button" class="btn btn-sm btn-outline-primary detail-button" data-order-detail="${escaparHtml(item.id)}"><i class="bi bi-eye"></i> Detalles</button></div>`).join("")
-                : '<p class="text-secondary mb-0">No se encontraron órdenes.</p>';
+                : '<p class="text-secondary mb-0">No se encontraron registros.</p>';
             } catch (error) {
                 if (version === busquedaVersion) resultados.innerHTML = '<p class="text-secondary mb-0">No se pudo buscar. Intenta nuevamente.</p>';
             }

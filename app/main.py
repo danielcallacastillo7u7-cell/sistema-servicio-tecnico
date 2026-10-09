@@ -77,6 +77,7 @@ templates.env.filters["pago_fecha"] = fecha_peru
 def inicio(
     request: Request,
     estado: str | None = Query(default=None),
+    servicio: str | None = Query(default=None),
     db: Session = Depends(obtener_db),
 ):
     conteos = dict(
@@ -162,6 +163,8 @@ def inicio(
                 "Todas las órdenes" if estado == "Todas" else "Órdenes canceladas" if estado == "Cancelado" else estado
             ),
             "ordenes_estado": ordenes_estado,
+            "servicio_lista": servicio if servicio in ("instalaciones", "pagos") else None,
+            "registros_servicio": (db.query(InstalacionCamara).order_by(InstalacionCamara.id.desc()).all() if servicio == "instalaciones" else db.query(PagoInternet).order_by(PagoInternet.id.desc()).all() if servicio == "pagos" else []),
         },
     )
 

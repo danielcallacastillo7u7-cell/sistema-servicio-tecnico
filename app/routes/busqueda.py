@@ -10,6 +10,8 @@ from app.models.diagnostico import Diagnostico
 from app.models.equipo import Equipo
 from app.models.orden import OrdenServicio
 from app.models.orden_equipo import OrdenEquipo
+from app.models.instalacion import InstalacionCamara
+from app.models.pago_internet import PagoInternet
 
 router = APIRouter(prefix="/api", tags=["Búsqueda"])
 HORA_PERU = timezone(timedelta(hours=-5))
@@ -61,7 +63,7 @@ def buscar(q: str = Query(min_length=2, max_length=100), db: Session = Depends(o
         .limit(10)
         .all()
     )
-    return [
+    resultados = [
         {
             "id": orden.id,
             "numero": orden.numero_orden,
@@ -107,6 +109,21 @@ def buscar(q: str = Query(min_length=2, max_length=100), db: Session = Depends(o
         }
         for orden in ordenes
     ]
+    for modelo, tipo in ((InstalacionCamara, 'instalacion'), (PagoInternet, 'pago')):
+        campos = ['direccion', 'nombres', 'apellidos', 'dni_ruc'] if tipo == 'instalacion' else ['direccion', 'titular', 'dni', 'periodo']
+        registros = db.query(modelo).filter(and_(*(or_(*(modelo.datos[campo].as_string().ilike(patron, escape='/') for campo in campos)) for patron in patrones))).order_by(modelo.id.desc()).limit(10).all()
+        for registro in registros:
+            d = registro.datos
+            resultados.append({
+                'id': f'{tipo}-{registro.id}',
+                'numero': registro.numero,
+                'cliente': f"{d.get('nombres', '')} {d.get('apellidos', '')}" if tipo == 'instalacion' else d.get('titular', ''),
+                'equipo': d.get('direccion', ''),
+                'estado': 'Instalación' if tipo == 'instalacion' else 'Pago de internet',
+                'reporte_url': f'/camaras/{registro.id}/reporte' if tipo == 'instalacion' else f'/pagos-internet/{registro.id}/ticket',
+            })
+    return resultados
+
 
 
 @router.get("/alertas")

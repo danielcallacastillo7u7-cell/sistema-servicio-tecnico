@@ -1,7 +1,23 @@
-<div class="ticket-share-actions" style="padding:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+<div class="ticket-share-actions" >
     <a class="btn btn-outline-dark" href="/ordenes/{{ ticket_orden.id }}/ticket.pdf" download>Descargar PDF A4</a>
     <button type="button" class="btn btn-outline-dark" onclick="window.print()">Imprimir ticket</button>
-    <a class="btn btn-outline-success" href="/ordenes/{{ ticket_orden.id }}/ticket/whatsapp" target="_blank" rel="noopener noreferrer">Abrir WhatsApp del cliente</a>
-    <small style="flex-basis:100%">Descarga el PDF y adjúntalo en WhatsApp con el botón de adjuntar → Documento. Revisa el destinatario antes de enviarlo.</small>
+    <a class="btn btn-outline-success" href="/ordenes/{{ ticket_orden.id }}/ticket/whatsapp" target="_blank"
+        rel="noopener noreferrer">WhatsApp del cliente</a>
+    <small style="flex-basis:100%">Descarga el PDF y adjúntalo en WhatsApp con el botón de adjuntar → Documento. Revisa
+        el destinatario antes de enviarlo.</small>
 </div>
-<style>@media print { .ticket-share-actions { display:none!important; } }</style>
+<style>
+.ticket-share-actions{font-family:Arial,sans-serif;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:18px;margin:0 auto 24px;max-width:760px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 4px 16px #14243a06}
+.ticket-share-actions .btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 16px;border:1px solid #dce3ed;border-radius:10px;background:#f8fafc;color:#24364c;font:600 13px/1.4 Arial,sans-serif;text-decoration:none;cursor:pointer;transition:background .15s,box-shadow .15s}
+.ticket-share-actions .btn:first-child{background:#d00039;border-color:#d00039;color:#fff}
+.ticket-share-actions .btn-outline-success{background:#eaf7ef;border-color:#cbe9d7;color:#167444}
+.ticket-share-actions .btn:hover{filter:brightness(.96);box-shadow:0 3px 9px #14243a12}.ticket-share-actions .btn:focus-visible{outline:3px solid #80b5ee;outline-offset:3px}
+.ticket-share-actions small{color:#69788d;font:12px/1.6 Arial,sans-serif;text-align:center;max-width:620px;margin-top:4px}
+@media(max-width:480px){.ticket-share-actions{padding:12px;gap:8px}.ticket-share-actions .btn{flex:1 1 130px}}
+
+    @media print {
+        .ticket-share-actions {
+            display: none !important;
+        }
+    }
+</style>

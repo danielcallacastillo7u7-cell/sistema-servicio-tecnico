@@ -14,8 +14,8 @@
     <link rel="stylesheet" href="{{ url_for('static', path='/css/interface.css') }}?v=editor-modal-20260927">
     <link rel="stylesheet" href="{{ url_for('static', path='/css/confirmaciones.css') }}?v=top-2">
     <script src="{{ url_for('static', path='/js/confirmaciones.js') }}?v=dialog-3"></script>
-<link rel="stylesheet" href="/static/css/reporte-instalacion.css?v=carta-2"><script src="/static/js/reporte-instalacion.js?v=1"></script><link rel="stylesheet" href="/static/css/servicios-selector.css?v=1"><link rel="stylesheet" href="/static/css/responsive-layout.css?v=3"></head>
-<body><div class="app-layout">
+<link rel="stylesheet" href="/static/css/reporte-instalacion.css?v=carta-3"><script src="/static/js/reporte-instalacion.js?v=3"></script><link rel="stylesheet" href="/static/css/servicios-selector.css?v=1"><link rel="stylesheet" href="/static/css/responsive-layout.css?v=3">{% if seccion == "inicio" %}<link rel="stylesheet" href="/static/css/dashboard-refresh.css?v=3">{% endif %}{% if seccion in ['ordenes', 'camaras'] %}<link rel="stylesheet" href="/static/css/services-reference.css?v=20261009-selector-2">{% endif %}<link rel="stylesheet" href="/static/css/interface-unified.css?v=20261009-1"></head>
+<body class="servitech-unified {% if seccion in ['ordenes', 'camaras'] %}services-reference {% endif %}{% if seccion == 'inicio' %}dashboard-refresh{% endif %}"><div class="app-layout">
 <aside class="sidebar">
     <a class="brand brand-logo" href="/">
         <img src="{{ url_for('static', path='/images/logo-servitech.png') }}" alt="ServiTech - Suministros de cómputo">
@@ -24,28 +24,35 @@
     <nav id="appNavigation" aria-label="Menú principal" class="nav flex-column gap-2">
         <a class="nav-link {% if seccion == 'inicio' %}active{% endif %}" href="/"><i class="bi bi-house-door"></i> Inicio</a>
         <a class="nav-link {% if seccion == 'clientes' %}active{% endif %}" href="/clientes"><i class="bi bi-people"></i> Clientes</a>
-        <a class="nav-link {% if seccion in ['ordenes', 'camaras'] %}active{% endif %}" href="/ordenes"><i class="bi bi-file-earmark-text"></i> Servicios</a>
+        <a class="nav-link {% if seccion in ['ordenes', 'camaras'] %}active{% endif %}" href="/ordenes"><i class="bi bi-wrench"></i> Servicios</a>
         <a class="nav-link {% if seccion == 'diagnosticos' %}active{% endif %}" href="/diagnosticos"><i class="bi bi-activity"></i> Diagnósticos <span id="diagnosticoAlerta" class="menu-alert" hidden>0</span></a>
-        <a class="nav-link {% if seccion == 'pagos_internet' %}active{% endif %}" href="/pagos-internet"><img src="/static/images/internet.png" alt="" style="width:24px;height:24px;object-fit:contain;border-radius:5px"> Pagos de internet</a>
+        <a class="nav-link {% if seccion == 'pagos_internet' %}active{% endif %}" href="/pagos-internet"><i class="bi bi-wifi" aria-hidden="true"></i> Pagos de internet</a>
         <a class="nav-link {% if seccion == 'exportaciones' %}active{% endif %}" href="/exportaciones"><i class="bi bi-file-earmark-spreadsheet"></i> Exportaciones</a>
         <a class="nav-link {% if seccion == 'ajustes' %}active{% endif %}" href="/ajustes"><i class="bi bi-gear"></i> Ajustes</a>
     </nav>
-    <div class="sidebar-footer"><div><span class="status-dot"></span>Base de datos conectada</div><small>Servidor <span class="online">en línea</span></small></div>
+    <div class="sidebar-footer dashboard-health">
+        <div class="health-row"><i class="bi bi-database" aria-hidden="true"></i><span class="health-dot"></span><div>Base de datos<strong>Conectada</strong></div></div>
+        <div class="health-row"><i class="bi bi-hdd-stack" aria-hidden="true"></i><span class="health-dot"></span><div>Servidor<strong>En línea</strong></div></div>
+    </div>
 </aside>
 <main class="main-content">
     {% if seccion == 'inicio' %}
     <div class="utility-bar">
         <div class="utility-search">
             <i class="bi bi-search" aria-hidden="true"></i>
-            <input id="buscadorGlobal" type="search" aria-label="Buscar órdenes, clientes o equipos" placeholder="Buscar órdenes, clientes o equipos…" autocomplete="off">
+            <input id="buscadorGlobal" type="search" aria-label="Buscar órdenes, clientes, equipos o direcciones" placeholder="{% if seccion in ['ordenes', 'camaras'] %}Buscar clientes, equipos, tickets...{% else %}Buscar órdenes, clientes, equipos o direcciones…{% endif %}" autocomplete="off">
+            <span class="search-shortcut" aria-hidden="true"><kbd>Ctrl</kbd><kbd>K</kbd></span>
             <div id="resultadosBusqueda" class="search-results" aria-live="polite"></div>
         </div>
-        <span class="utility-account">SERVITECH <i class="bi bi-person-circle" aria-hidden="true"></i></span>
+        <div class="utility-profile">
+            <a class="notification-link" href="/diagnosticos" aria-label="Ver diagnósticos pendientes"><i class="bi bi-bell" aria-hidden="true"></i>{% if estados is defined and estados.recibidos %}<span class="notification-dot"></span>{% endif %}</a>
+            <details class="profile-menu"><summary><span class="profile-avatar">S</span><span class="profile-label"><strong>SERVITECH</strong><small>Usuario</small></span><i class="bi bi-chevron-down" aria-hidden="true"></i></summary><div class="profile-links"><a href="/ajustes">Ajustes</a></div></details>
+        </div>
     </div>
     {% endif %}
     <header class="topbar"><div><p class="eyebrow">{% if seccion == 'inicio' %}Bienvenido, Usuario{% else %}Sistema de servicio técnico{% endif %}</p><h1>{% block page_title %}ServiTech{% endblock %}</h1>{% block page_subtitle %}{% endblock %}</div>{% block header_extra %}{% endblock %}</header>
     <section class="content-area">{% block content %}{% endblock %}</section>
     <footer class="app-footer">© 2026 <strong>ServiTech</strong> · Sistema de Servicio Técnico</footer>
 </main>
-</div><script src="{{ url_for('static', path='/js/app.js') }}?v=confirmacion-20260926"></script><script src="{{ url_for('static', path='/js/cliente-documento.js') }}?v=confirmacion-20260926"></script><script src="{{ url_for('static', path='/js/orden-equipos.js') }}?v=productos-multiples-20260928"></script><script src="/static/js/responsive-layout.js?v=3"></script></body>
+</div><script src="{{ url_for('static', path='/js/app.js') }}?v=busqueda-direccion-1"></script><script src="{{ url_for('static', path='/js/cliente-documento.js') }}?v=confirmacion-20260926"></script><script src="{{ url_for('static', path='/js/orden-equipos.js') }}?v=productos-multiples-20260928"></script><script src="/static/js/responsive-layout.js?v=3"></script></body>
 </html>
