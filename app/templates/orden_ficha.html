@@ -1,0 +1,14 @@
+{% macro dato(titulo, valor) %}<div><dt>{{ titulo }}</dt><dd>{{ valor or 'No registrado' }}</dd></div>{% endmacro %}
+<template id="{{ ficha_prefix|default("ficha-") }}{{ o.id }}">
+<header class="ficha-header"><small>DETALLE DE LA ORDEN</small><h2>{{ o.numero_orden }}</h2><span>{{ o.estado }}</span><p>Ingreso: {{ o.fecha_ingreso | pago_fecha }}</p></header>
+<div class="ficha-body">
+<section><h3>Datos del cliente</h3><dl>{{ dato('Nombre completo', o.equipo.cliente.nombres ~ ' ' ~ o.equipo.cliente.apellidos) }}{{ dato('DNI / RUC', o.equipo.cliente.dni_ruc) }}{{ dato('Celular', o.equipo.cliente.telefono) }}{{ dato('Técnico responsable', o.tecnico_responsable) }}</dl></section>
+{% for e in o.equipos_recibidos %}<section><h3>Dispositivo {{ loop.index }} · {{ e.tipo }}</h3><dl>{{ dato('Marca', e.marca) }}{{ dato('Modelo', e.modelo) }}{{ dato('Número de serie', e.numero_serie) }}{{ dato('Accesorios recibidos', e.accesorios) }}{{ dato('Observaciones del equipo', e.observaciones) }}</dl></section>{% endfor %}
+<section><h3>Servicio solicitado</h3><dl>{{ dato('Falla reportada', o.falla_reportada) }}{{ dato('Productos adicionales', o.otro_producto_servicio) }}</dl></section>
+<section><h3>Diagnóstico y reparación</h3>{% if o.diagnostico %}<dl>{{ dato('Falla encontrada', o.diagnostico.falla_encontrada) }}{{ dato('Solución recomendada', o.diagnostico.solucion_recomendada) }}{{ dato('Repuestos necesarios', o.diagnostico.repuestos_necesarios) }}{{ dato('Costo estimado', 'S/ %.2f'|format(o.diagnostico.costo_estimado)) }}</dl>
+{% if o.diagnostico.imagenes %}<h4>Evidencias del dispositivo</h4><div class="ficha-images">{% for i in o.diagnostico.imagenes %}<a href="/diagnosticos/imagenes/{{ i.id }}" target="_blank" rel="noopener"><img loading="lazy" src="/diagnosticos/imagenes/{{ i.id }}" alt="{{ i.nombre_archivo }}"></a>{% endfor %}</div>{% endif %}
+{% else %}<p>Aún no se ha registrado un diagnóstico.</p>{% endif %}</section>
+{% if o.fecha_no_reparado %}<section><h3>No se pudo reparar</h3><p>{{ o.motivo_no_reparado or 'Sin motivo registrado' }}</p></section>{% endif %}
+{% if o.cancelacion %}<section><h3>Cancelación</h3><dl>{{ dato('Motivo', o.cancelacion.motivo) }}{{ dato('Detalle', o.cancelacion.detalle) }}</dl></section>{% endif %}
+</div><footer class="ficha-footer"><button type="button" data-close-ficha>Volver a las órdenes</button><a href="/ordenes?ticket={{ o.id }}">Ver ticket</a></footer>
+</template>

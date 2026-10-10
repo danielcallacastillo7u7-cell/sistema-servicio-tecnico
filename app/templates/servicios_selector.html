@@ -1,0 +1,7 @@
+<nav class="services-mode-slider {% if seccion == 'camaras' %}is-installations{% endif %}"
+    aria-label="Tipo de servicio">
+    <span class="services-mode-thumb" aria-hidden="true"></span>
+    <a href="/ordenes" {% if seccion=='ordenes' %}aria-current="page" {% endif %}>Órdenes</a>
+    <a href="/camaras" {% if seccion=='camaras' %}aria-current="page" {% endif %}>Instalaciones</a>
+</nav>
+<script src="/static/js/servicios-selector.js?v=1" defer></script>

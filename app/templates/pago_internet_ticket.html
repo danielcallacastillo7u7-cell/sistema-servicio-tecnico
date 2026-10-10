@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{{ pago.numero }} · Pago de internet</title>
+    <style>
+        body {
+            font: 14px Arial;
+            color: #111;
+            background: #eef1f5;
+            margin: 0;
+            padding: 20px
+        }
+
+        .ticket {
+            width: 72mm;
+            max-width: 100%;
+            padding: 4mm;
+            margin: auto;
+            background: white;
+            box-sizing: border-box
+        }
+
+        h1 {
+            font-size: 18px;
+            text-align: center
+        }
+
+        img {
+            display: block;
+            width: 32mm;
+            height: 32mm;
+            object-fit: contain;
+            background: white;
+            margin: auto
+        }
+
+        dl {
+            margin: 12px 0
+        }
+
+        dt {
+            font-weight: bold;
+            margin-top: 10px;
+            font-size: 12px
+        }
+
+        dd {
+            margin: 3px 0;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap
+        }
+
+        .total {
+            font-size: 22px;
+            font-weight: bold;
+            border-top: 2px solid;
+            padding: 12px 0
+        }
+
+        .aviso {
+            border: 2px solid #111;
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.5;
+            font-weight: bold
+        }
+
+        .aviso strong {
+            display: block;
+            font-size: 23px;
+            margin: 8px 0
+        }
+
+        .acciones {
+            text-align: center;
+            margin: 20px
+        }
+
+        button,
+        a {
+            padding: 10px
+        }
+
+        @media print {
+            @page {
+                size: 80mm auto;
+                margin: 3mm
+            }
+
+            body {
+                padding: 0;
+                background: white
+            }
+
+            .ticket {
+                padding: 0;
+                width: 72mm
+            }
+
+            .acciones {
+                display: none
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ticket"><img src="/static/images/logo-servitel.png" alt="ServiTel">
+        <h1>COMPROBANTE DE PAGO DE INTERNET</h1>
+        <p style="text-align:center">{{ pago.numero }}</p>
+        <dl>
+            <dt>FECHA Y HORA DE EMISIÓN (PERÚ)</dt>
+            <dd>{{ pago.fecha|pago_fecha }}</dd>
+            <dt>EMITIDO POR</dt>
+            <dd>{{ pago.emisor }}</dd>
+            <dt>MES PAGADO</dt>
+            <dd>{{ periodo }}</dd>
+            <dt>TITULAR</dt>
+            <dd>{{ d.titular }}</dd>
+            <dt>DNI</dt>
+            <dd>{{ d.dni }}</dd>
+            <dt>DIRECCIÓN</dt>
+            <dd>{{ d.direccion }}</dd>
+            <dt>CELULAR</dt>
+            <dd>{{ d.celular }}</dd>{% if d.observacion %}<dt>OBSERVACIÓN</dt>
+            <dd>{{ d.observacion }}</dd>{% endif %}{% if d.subtotal is not none %}<dt>SUBTOTAL</dt>
+            <dd>S/ {{ '%.2f'|format(d.subtotal|float) }}</dd>{% endif %}{% if d.descuento is not none %}<dt>DESCUENTO
+            </dt>
+            <dd>S/ {{ '%.2f'|format(d.descuento|float) }}</dd>{% endif %}
+        </dl>
+        <div class="total">TOTAL: S/ {{ '%.2f'|format(d.total|float) }}</div>
+        <div class="aviso">Una vez cancelado, envía una captura de este comprobante al WhatsApp<strong>922 048
+                201</strong>para su registro correspondiente.</div>
+    </div>{% if request.query_params.get("embed") != "1" %}<div class="acciones"><button
+            onclick="window.print()">Imprimir comprobante</button><a href="/pagos-internet">Volver a pagos</a></div>{%
+    endif %}
+</body>
+
+</html>

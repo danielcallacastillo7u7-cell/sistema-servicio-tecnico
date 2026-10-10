@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -16,7 +16,11 @@ class OrdenServicio(Base):
         nullable=False,
         index=True,
     )
+    motivo_no_reparado = Column(Text, nullable=True)
+    fecha_no_reparado = Column(DateTime(timezone=True), nullable=True)
     falla_reportada = Column(Text, nullable=False)
+    otro_producto_servicio = Column(Text, nullable=True)
+    servicio_domicilio = Column(Boolean, nullable=True)
     tecnico_responsable = Column(String(120), nullable=True, index=True)
     estado = Column(String(50), nullable=False, default="Recibido", index=True)
     fecha_ingreso = Column(
@@ -26,6 +30,16 @@ class OrdenServicio(Base):
     )
 
     equipo = relationship("Equipo", back_populates="ordenes")
+    recepciones = relationship(
+        "OrdenEquipo", back_populates="orden", cascade="all, delete-orphan",
+        order_by="OrdenEquipo.posicion",
+    )
+
+    @property
+    def equipos_recibidos(self):
+        # Compatibilidad con órdenes anteriores a la migración.
+        return self.recepciones or [self.equipo]
+
     diagnostico = relationship(
         "Diagnostico",
         back_populates="orden",

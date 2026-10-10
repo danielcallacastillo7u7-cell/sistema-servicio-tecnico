@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Instalación de cámaras | ServiTech{% endblock %}
+{% block page_title %}Nueva <span class="services-red">instalación de cámaras</span>{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Registra el cliente y los detalles de la instalación</p>{% endblock %}
+{% block header_extra %}<div class="services-header-actions">{% include 'servicios_selector.html' %}<a class="btn btn-outline-primary services-reports" href="/camaras/reportes"><i class="bi bi-file-earmark-text"></i> Reportes de instalaciones</a></div>{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/instalacion-formulario.css?v=calendar-popup-2">{% endblock %}
+{% block content %}
+
+<form id="installationForm">
+    <div class="card panel-card mb-4">
+        <div class="card-body p-4">
+            <h2 class="section-title"><i class="bi bi-person"></i> Datos del cliente</h2>
+            <p class="installation-help">Información del cliente que solicita la instalación.</p>
+            <div class="row g-3">
+                <div class="col-md-6"><label for="inst-dni_ruc" class="form-label">DNI/RUC <span class="required">*</span></label><div class="services-icon-input"><i class="bi bi-person-vcard" aria-hidden="true"></i><input
+                        id="inst-dni_ruc" placeholder="Ej. 12345678 o 20123456789" name="dni_ruc" class="form-control"
+                        maxlength="11" inputmode="numeric" pattern="[0-9]{8}|[0-9]{11}" required></div><small class="form-text">DNI: 8 dígitos - RUC: 11 dígitos.</small></div>
+                <div class="col-md-6"><label for="inst-celular" class="form-label">Celular <span class="required">*</span></label><div class="services-icon-input"><i class="bi bi-telephone" aria-hidden="true"></i><input
+                        id="inst-celular" placeholder="Ej. 980123456" name="celular" class="form-control" maxlength="9"
+                        inputmode="numeric" pattern="[0-9]{9}" required></div></div>
+                <div class="col-md-6"><label for="inst-nombres" class="form-label">Nombres <span class="required">*</span></label><div class="services-icon-input"><i class="bi bi-person" aria-hidden="true"></i><input
+                        id="inst-nombres" placeholder="Ej. Juan Carlos" name="nombres" class="form-control"
+                        maxlength="100" required></div></div>
+                <div class="col-md-6"><label for="inst-apellidos" class="form-label">Apellidos <span class="required">*</span></label><div class="services-icon-input"><i class="bi bi-person" aria-hidden="true"></i><input
+                        id="inst-apellidos" placeholder="Ej. Pérez García" name="apellidos" class="form-control"
+                        maxlength="100" required></div></div>
+                <div class="col-md-6"><label for="inst-tecnico" class="form-label">Responsable técnico <span class="required">*</span></label><div class="services-icon-input"><i class="bi bi-wrench" aria-hidden="true"></i><select
+                        id="inst-tecnico" name="tecnico_id" class="form-select" required>
+                        <option value="">Selecciona un técnico</option>{% for t in trabajadores %}<option
+                            value="{{ t.id }}">{{ t.nombre }}</option>{% endfor %}
+                    </select></div>{% if not trabajadores %}<p class="form-text">Agrega un técnico en <a
+                            href="/ajustes">Ajustes</a> para registrar instalaciones.</p>{% endif %}</div>
+            </div>
+        </div>
+    </div>
+    <div class="card panel-card mb-4">
+        <div class="card-body p-4">
+            <h2 class="section-title"><i class="bi bi-calendar-event"></i> Datos de instalación</h2>
+            <p class="installation-help">Programa la instalación y registra la ubicación.</p>
+            <div class="row g-3">
+                <div class="col-md-6"><label for="agendaAbrir" class="form-label">Fecha programada de instalación
+                        <span class="required">*</span></label>
+                    <div class="agenda-field"><input id="inst-fecha" name="fecha_instalacion" min="{{ hoy }}"
+                            type="date" class="visually-hidden" tabindex="-1" required><button id="agendaAbrir"
+                            type="button" class="form-control text-start" aria-haspopup="dialog" aria-expanded="false"
+                            aria-controls="installationAgenda"><span id="agendaFechaTexto">dd/mm/aaaa</span><i
+                                class="bi bi-calendar-event float-end" aria-hidden="true"></i></button>
+                        <div id="installationAgenda" class="agenda-popup" role="dialog"
+                            aria-label="Seleccionar fecha de instalación" hidden>
+                            <div class="d-flex align-items-center justify-content-between my-2"><button type="button"
+                                    id="agendaPrev" class="btn btn-sm btn-outline-secondary"
+                                    aria-label="Mes anterior">‹</button><strong id="agendaMes"></strong><button
+                                    type="button" id="agendaNext" class="btn btn-sm btn-outline-secondary"
+                                    aria-label="Mes siguiente">›</button></div>
+                            <p class="form-text">Los días en amarillo tienen instalaciones reservadas.</p>
+                            <div id="agendaDias" class="installation-calendar"></div>
+                            <p id="agendaEstado" role="status"></p>
+                            <ul id="agendaReservas"></ul><button type="button" id="agendaCerrar"
+                                class="btn btn-sm btn-outline-secondary">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6"><label for="inst-hora" class="form-label">Hora de instalación <span class="required">*</span></label><div class="services-icon-input"><i class="bi bi-clock" aria-hidden="true"></i><input
+                        id="inst-hora" name="hora_instalacion" type="time" class="form-control" required></div><small
+                        class="form-text">Hora de Perú.</small></div>
+
+                <div class="col-md-6"><label for="inst-registro" class="form-label">Fecha de registro</label><div class="services-icon-input"><i class="bi bi-calendar" aria-hidden="true"></i><input
+                        id="inst-registro" class="form-control" value="Se asigna automáticamente al guardar"
+                        readonly></div><small class="form-text">Fecha y hora de Perú.</small></div>
+                <div class="col-md-6"><label for="inst-direccion" class="form-label">Dirección completa de la instalación
+                        <span class="required">*</span></label><div class="services-icon-input"><i class="bi bi-geo-alt" aria-hidden="true"></i><textarea id="inst-direccion" name="direccion" class="form-control" rows="2"
+                        minlength="5" maxlength="500"
+                        placeholder="Departamento, provincia, distrito, calle, número y referencia de la vivienda"
+                        required></textarea></div></div>
+            </div>
+        </div>
+    </div>
+    <div class="card panel-card mb-4">
+        <div class="card-body p-4">
+            <div class="installation-cameras-heading">
+                <div>
+                    <h2 class="section-title"><i class="bi bi-camera-video"></i> Cámaras a instalar (opcional)</h2>
+                    <p class="installation-help">Registra las cámaras que se instalarán en esta ubicación.</p>
+                </div><button type="button" id="addInstallationCamera" class="btn btn-outline-primary">+ Agregar otra
+                    cámara</button>
+            </div>
+            <div id="installationCameras"></div>
+        </div>
+    </div>
+    <div class="card panel-card mb-4">
+        <div class="card-body p-4">
+            <h2 class="section-title"><i class="bi bi-bag"></i> Productos vendidos (opcional)</h2>
+            <p class="installation-help">Registra los productos adicionales vendidos para esta instalación, como cables,
+                canaletas o conectores.</p>
+            <div class="form-check mb-3"><input id="hasInstallationProducts" type="checkbox"
+                    class="form-check-input"><label for="hasInstallationProducts" class="form-check-label">Se vendieron
+                    productos adicionales</label></div>
+            <div class="installation-product-description"><label for="inst-observaciones" class="form-label">Productos
+                    vendidos (opcional)</label><div class="services-icon-input"><i class="bi bi-file-earmark-text" aria-hidden="true"></i><textarea id="inst-observaciones" name="observaciones"
+                    class="form-control" rows="2" maxlength="3000"
+                    placeholder="Describe los productos vendidos…"></textarea></div></div>
+            <div id="installationProductsArea" hidden>
+                <div id="installationProducts"></div><button id="addInstallationProduct" type="button"
+                    class="btn btn-outline-primary">Agregar producto</button>
+            </div>
+        </div>
+    </div>
+    <div class="d-flex gap-3 flex-wrap"><button id="saveInstallation" class="btn btn-primary" type="submit" {% if not
+            trabajadores %}disabled{% endif %}><i class="bi bi-floppy" aria-hidden="true"></i> Guardar instalación y ver reporte</button></div>
+    <p id="installationFeedback" role="status" aria-live="polite" class="mt-3"></p>
+</form>
+<template id="installationCameraTemplate">
+    <section class="installation-camera">
+        <div class="d-flex justify-content-between">
+            <h3 class="h6 row-title">Cámara</h3><button type="button"
+                class="btn btn-sm btn-outline-danger remove-installation-row">Quitar</button>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-6"><label data-label="modelo" class="form-label">Marca y modelo de cámara</label><div class="services-icon-input"><i class="bi bi-camera-video" aria-hidden="true"></i><input
+                    data-field="modelo" placeholder="Ej. Hikvision DS-2CD2043G2-I" class="form-control" maxlength="150"></div>
+            </div>
+            <div class="col-md-4"><label data-label="procedencia" class="form-label">Procedencia</label><div class="services-icon-input"><i class="bi bi-geo-alt" aria-hidden="true"></i><select
+                    data-field="procedencia" class="form-select">
+                    <option value="">Selecciona</option>
+                    <option value="ServiTech">Vendida por ServiTech</option>
+                    <option value="Cliente">El cliente tiene las cámaras</option>
+                </select></div></div>
+            <div class="col-md-2"><label data-label="cantidad" class="form-label">Cantidad</label><div class="services-icon-input"><i class="bi bi-calendar" aria-hidden="true"></i><input
+                    data-field="cantidad" class="form-control" type="number" min="1" max="1000" step="1" value=""></div></div>
+        </div>
+    </section>
+</template>
+<template id="installationProductTemplate">
+    <section class="border rounded p-3 mb-3 installation-product">
+        <div class="d-flex justify-content-between">
+            <h3 class="h6 row-title">Producto</h3><button type="button"
+                class="btn btn-sm btn-outline-danger remove-installation-row">Quitar</button>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-6"><label data-label="descripcion" class="form-label">Producto vendido
+                    (opcional)</label><input data-field="descripcion" class="form-control" maxlength="150"
+                    placeholder="Cable UTP, canaleta…"></div>
+            <div class="col-md-3"><label data-label="cantidad" class="form-label">Cantidad <span class="required">*</span></label><div class="services-icon-input"><i class="bi bi-calendar" aria-hidden="true"></i><input
+                    data-field="cantidad" class="form-control" type="number" min="0.01" max="100000" step="0.01"
+                    value="1" required></div></div>
+            <div class="col-md-3"><label data-label="unidad" class="form-label">Unidad <span class="required">*</span></label><select
+                    data-field="unidad" class="form-select">
+                    <option>Unidad</option>
+                    <option>Metro</option>
+                    <option>Caja</option>
+                    <option>Rollo</option>
+                    <option>Otro</option>
+                </select></div>
+        </div>
+    </section>
+</template>
+<style>
+    #installationForm [hidden] {
+        display: none !important
+    }
+
+    .installation-camera,
+    .installation-product {
+        background: #fafcfe
+    }
+</style>
+<script src="/static/js/instalacion-agenda.js?v=2"></script>
+<script src="{{ url_for('static', path='/js/camaras.js') }}?v=camaras-libres-20260928"></script>
+{% endblock %}

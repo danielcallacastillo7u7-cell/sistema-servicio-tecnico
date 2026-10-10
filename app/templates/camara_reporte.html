@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{{ registro.numero }} | Instalación</title>
+    <style>
+        body {
+            font: 14px/1.5 Arial, sans-serif;
+            color: #27313e;
+            margin: 0;
+            padding: 24px;
+            background: white
+        }
+
+        h2 {
+            font-size: 20px;
+            padding-right: 145px;
+            margin: 0 0 16px
+        }
+
+        h3 {
+            font-size: 16px;
+            margin: 24px 0 8px
+        }
+
+        p {
+            margin: 8px 0
+        }
+
+        .report-logo {
+            background: #17212d;
+            border-radius: 6px;
+            float: right;
+            width: 130px;
+            height: 90px;
+            object-fit: contain
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px
+        }
+
+        th {
+            text-align: left;
+            background: #eef2f6
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #dce2e8;
+            overflow-wrap: anywhere
+        }
+
+        table {
+            table-layout: fixed
+        }
+
+        .preserve-lines {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere
+        }
+
+        @media(max-width:450px) {
+            body {
+                padding: 16px
+            }
+
+            .report-logo {
+                width: 95px
+            }
+
+            h2 {
+                padding-right: 105px;
+                font-size: 18px
+            }
+        }
+    </style>
+</head>
+
+<body>{% set d=registro.datos %}
+    <div class="installation-report">
+        <img class="report-logo" src="/static/images/logo-seguritech.png" alt="SeguriTech Soluciones">
+        <h2 class="h4">SeguriTech · Instalación de cámaras</h2>
+        <p><strong>Registro:</strong> {{ registro.numero }}</p>
+        <p><strong>Fecha de registro:</strong> {{ registro.fecha_registro|fecha_instalacion_local }}
+            (Perú)<br><strong>Fecha programada:</strong> {{ registro.fecha_instalacion.strftime('%d/%m/%Y') }}</p>
+        <p><strong>Hora de instalación:</strong> {{ d.get('hora_instalacion') or 'Sin hora registrada' }} (Perú)</p>
+        <h3 class="h5 mt-4">Datos del cliente</h3>
+        <p>{{ d.nombres }} {{ d.apellidos }}<br><strong>DNI/RUC:</strong> {{ d.dni_ruc }} · <strong>Celular:</strong> {{
+            d.celular }}<br><strong>Responsable técnico:</strong> {{ registro.tecnico }}</p>
+        <h3 class="h5 mt-4">Dirección de instalación</h3>
+        <p class="preserve-lines">{{ d.direccion }}</p>
+        <h3 class="h5 mt-4">Cámaras</h3>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Modelo</th>
+                        <th>Procedencia</th>
+                        <th>Cantidad</th>
+                    </tr>
+                </thead>
+                <tbody>{% for c in d.camaras %}<tr>
+                        <td>{{ c.modelo or 'Sin especificar' }}</td>
+                        <td>{{ {'ServiTech':'Vendida por ServiTech','Cliente':'Aportada por el
+                            cliente'}.get(c.procedencia,'Sin especificar') }}</td>
+                        <td>{{ c.cantidad if c.cantidad is not none else 'Sin especificar' }}</td>
+                    </tr>{% endfor %}</tbody>
+            </table>
+        </div>
+        <h3 class="h5 mt-4">Productos vendidos (detalle)</h3>
+        <p class="preserve-lines">{{ d.observaciones or 'No especificados.' }}</p>
+        <h3 class="h5 mt-4">Productos vendidos</h3>{% if d.productos %}<div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Unidad</th>
+                    </tr>
+                </thead>
+                <tbody>{% for p in d.productos %}<tr>
+                        <td>{{ p.descripcion }}</td>
+                        <td>{{ p.cantidad }}</td>
+                        <td>{{ p.unidad }}</td>
+                    </tr>{% endfor %}</tbody>
+            </table>
+        </div>{% else %}<p>No se registraron productos adicionales vendidos.</p>{% endif %}
+        <h3>Otro producto o servicio</h3>
+        <p class="preserve-lines">{{ d.get('otro_producto_servicio') or 'No especificado' }}</p>
+        <p><strong>Servicio técnico a domicilio:</strong> {{ {'si':'Sí','no':'No'}.get(d.get('servicio_domicilio'), 'Sin
+            especificar') }}</p>
+    </div>
+</body>
+
+</html>
