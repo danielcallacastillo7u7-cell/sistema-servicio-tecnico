@@ -2,7 +2,7 @@
 {% block title %}Inicio | ServiTech{% endblock %}{% block page_title %}Panel <span>principal</span>{% endblock %}
 {% block page_subtitle %}<p class="page-subtitle">Sistema de gestión del taller de cómputo</p>{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', path='/css/inicio.css') }}?v=20260908">{% endblock %}
-{% block header_extra %}<div class="dashboard-today"><i class="bi bi-calendar-event"></i><div>Hoy<strong id="dashboardToday"></strong></div></div><div class="dashboard-brand"><img src="/static/images/local-servitech.png" alt="Local de ServiTech"></div>{% endblock %}
+{% block header_extra %}<div class="dashboard-today"><i class="bi bi-calendar-event"></i><div>Hoy<strong id="dashboardToday"></strong></div></div><div class="dashboard-brand dashboard-carousel" aria-label="Imágenes de ServiTech"><div class="dashboard-carousel-window"><div class="dashboard-carousel-track"><img src="/static/images/local-servitech.png" alt="Local de ServiTech"></div></div></div><script src="/static/js/inicio-carrusel.js?v=1" defer></script>{% endblock %}
 {% block content %}
 <div class="home-summary-cards"><a class="home-total" href="/?servicio=pagos"><span class="home-mini-icon"><i class="bi bi-wifi" aria-hidden="true"></i></span><span><strong>Pagos de internet</strong><b>{{ total_pagos_internet }}</b><small>Total de pagos registrados</small></span></a><a class="home-total" href="/?servicio=instalaciones"><span class="home-mini-icon"><i class="bi bi-camera-video" aria-hidden="true"></i></span><span><strong>Instalaciones</strong><b>{{ total_instalaciones }}</b><small>Registro completo</small></span></a>
 <a class="home-total" href="/?estado=Todas">
