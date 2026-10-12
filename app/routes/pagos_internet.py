@@ -1,3 +1,4 @@
+from app.services.morosidad import bloqueo_activo, comprobar_atencion
 from pathlib import Path
 from uuid import UUID
 from decimal import Decimal
@@ -50,6 +51,7 @@ def guardar(datos: Pago, db: Session=Depends(obtener_db)):
     if previo:
         if previo.datos!=contenido:raise HTTPException(409,'Este comprobante ya se guardó con otros datos. Abre un nuevo pago.')
         return respuesta(previo)
+    comprobar_atencion(db, datos.dni)
     tecnico=db.query(Trabajador).filter_by(id=datos.tecnico_id,activo=True).first()
     if not tecnico:raise HTTPException(422,'Selecciona un técnico activo.')
     pago=PagoInternet(token=token,emisor=tecnico.nombre,datos=contenido);db.add(pago)

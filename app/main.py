@@ -8,6 +8,8 @@ from sqlalchemy import func, text, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import Base, engine, obtener_db
+from app.models.bloqueo_cliente import BloqueoCliente
+from app.routes.morosidad import router as morosidad_router
 from app.models.insumo import Insumo, MovimientoInsumo
 from app.routes.inventario import router as inventario_router
 from app.models.pago_internet import PagoInternet
@@ -54,6 +56,7 @@ Base.metadata.create_all(bind=engine)
 migrar_equipos_orden(engine)
 migrar_detalles_servicio(engine)
 
+app.include_router(morosidad_router)
 app.include_router(inventario_router)
 app.include_router(pagos_internet_router)
 app.include_router(camaras_router)

@@ -39,8 +39,18 @@
         <div class="ultimos-selector" role="tablist" aria-label="Tipo de servicio">
             <button type="button" role="tab" id="tab-ordenes" aria-controls="ultimos-ordenes" aria-selected="true" data-servicio="ordenes">Órdenes</button>
             <button type="button" role="tab" id="tab-instalaciones" aria-controls="ultimos-instalaciones" aria-selected="false" tabindex="-1" data-servicio="instalaciones">Instalaciones</button>
-            <button type="button" role="tab" id="tab-pagos" aria-controls="ultimos-pagos" aria-selected="false" tabindex="-1" data-servicio="pagos">Pagos de internet</button>
+            <button type="button" role="tab" id="tab-pagos" aria-controls="ultimos-pagos" aria-selected="false" tabindex="-1" data-servicio="pagos">Pagos de internet</button><button type="button" role="tab" id="tab-morosidad" hidden style="display:none" aria-controls="ultimos-morosidad" aria-selected="false" tabindex="-1" data-servicio="morosidad">Morosidad</button>
         </div>
+<div id="ultimos-morosidad" role="tabpanel" aria-labelledby="tab-morosidad" hidden>
+<h3 class="h5 mt-3">Morosidad y bloqueo de atención</h3><p class="text-secondary">El bloqueo se aplica por DNI/RUC a nuevas órdenes, instalaciones y pagos de internet.</p>
+<form id="morosidadForm" class="row g-3 mb-3">
+<div class="col-md-3"><label class="form-label">DNI/RUC</label><input class="form-control" name="documento" required pattern="[0-9]{8}|[0-9]{11}" maxlength="11" inputmode="numeric"></div>
+<div class="col-md-4"><label class="form-label">Nombre del cliente</label><input class="form-control" name="nombre" required minlength="2" maxlength="200"></div>
+<div class="col-md-3"><label class="form-label">Deuda pendiente (S/) · opcional</label><input class="form-control" name="monto" type="number" min="0" step="0.01"></div>
+<div class="col-12"><label class="form-label">Motivo del bloqueo</label><input class="form-control" name="motivo" required minlength="3" maxlength="1000"></div>
+<div class="col-12"><button class="btn btn-primary" type="submit">Registrar y bloquear atención</button></div></form>
+<p id="morosidadMensaje" role="status"></p><div class="table-responsive"><table class="table"><thead><tr><th>DNI/RUC</th><th>Cliente</th><th>Motivo</th><th>Deuda</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="morosidadLista"></tbody></table></div>
+</div><script src="/static/js/morosidad.js?v=3" defer></script>
         <div id="ultimos-ordenes" role="tabpanel" aria-labelledby="tab-ordenes" tabindex="0" class="table-responsive">
             <table class="table dashboard-table align-middle">
                 <thead>
@@ -50,7 +60,7 @@
                         <th>Equipo</th>
                         <th>Estado</th>
                         <th>Diagnóstico</th>
-                        <th>Fecha</th>
+                        <th>Fecha</th><th>Morosidad</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -60,9 +70,9 @@
                         <td>{% for equipo in orden.equipos_recibidos %}{{ equipo.tipo }} {{ equipo.marca }} {{ equipo.modelo or "" }}{% if not loop.last %} · {% endif %}{% endfor %}</td>
                         <td><span class="order-status" data-status="{{ orden.estado }}">{{ orden.estado }}</span></td>
                         <td>{% if orden.diagnostico %}<button type="button" class="btn btn-link p-0">Ver diagnóstico</button>{% else %}<span class="text-secondary">Pendiente</span>{% endif %}</td>
-                        <td>{{ orden.fecha_ingreso.strftime("%d/%m/%Y") }}</td>
+                        <td>{{ orden.fecha_ingreso.strftime("%d/%m/%Y") }}</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-morosidad-dni="{{ orden.equipo.cliente.dni_ruc }}" data-morosidad-nombre="{{ orden.equipo.cliente.nombres }} {{ orden.equipo.cliente.apellidos }}">Marcar morosidad</button></td>
                     </tr>{% else %}<tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state"><i class="bi bi-clipboard-x"></i><strong>Todavía no hay órdenes
                                     registradas.</strong><span>Cuando crees tu primera orden, aparecerá aquí.</span>
                             </div>
@@ -132,5 +142,5 @@
 {% endif %}
 {% include "recientes_fichas.html" %}
 {% include "pago_comprobante_modal.html" %}
-<script src="/static/js/ultimos-servicios.js?v=2"></script><script src="/static/js/dashboard-refresh.js?v=2"></script>
+<script src="/static/js/ultimos-servicios.js?v=3"></script><script src="/static/js/dashboard-refresh.js?v=2"></script>
 {% endblock %}

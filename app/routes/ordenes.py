@@ -1,3 +1,4 @@
+from app.services.morosidad import bloqueo_activo, comprobar_atencion
 from app.services.confirmaciones import redireccion_confirmada
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -202,6 +203,8 @@ async def registrar_orden(request: Request, db: Session = Depends(obtener_db)):
     nombres = " ".join(valores.get("nombres", "").split())
     apellidos = " ".join(valores.get("apellidos", "").split())
     dni_ruc = valores.get("dni_ruc", "").strip()
+    if bloqueo_activo(db, dni_ruc):
+        return error("Atención bloqueada por morosidad. Solicita el desbloqueo al encargado en Inicio → Morosidad.", 403)
     telefono = valores.get("telefono", "").strip()
     falla = valores.get("falla_reportada", "").strip()
     tecnico = valores.get("tecnico_responsable", "")

@@ -1,3 +1,4 @@
+from app.services.morosidad import bloqueo_activo, comprobar_atencion
 from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal
 from io import BytesIO
@@ -89,6 +90,7 @@ def registrar_instalacion(datos: Registro, db: Session = Depends(obtener_db)):
     if existente:
         if existente.datos != contenido: raise HTTPException(409, 'Este envío ya fue utilizado. Recarga el formulario antes de crear otro registro.')
         return {'numero':existente.numero,'url':f'/camaras/{existente.id}/reporte'}
+    comprobar_atencion(db, datos.dni_ruc)
     if datos.fecha_instalacion < datetime.now(PERU).date():
         raise HTTPException(422, 'La fecha programada no puede ser anterior a hoy (hora de Perú).')
     tecnico = db.query(Trabajador).filter_by(id=datos.tecnico_id, activo=True).first()

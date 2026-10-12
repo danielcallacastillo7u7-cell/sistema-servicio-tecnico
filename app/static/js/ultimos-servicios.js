@@ -3,7 +3,7 @@
  const urls = {ordenes:'/?estado=Todas', instalaciones:'/?servicio=instalaciones', pagos:'/?servicio=pagos'};
  function select(tab) {
    tabs.forEach(t => {const active=t===tab;t.setAttribute('aria-selected',String(active));t.tabIndex=active?0:-1;document.getElementById(t.getAttribute('aria-controls')).hidden=!active;});
-   document.getElementById('serviciosVerTodos').href=urls[tab.dataset.servicio];
+   document.getElementById('serviciosVerTodos').href=(tab.dataset.servicio==='morosidad'?'/?servicio=morosidad':urls[tab.dataset.servicio]);
  }
  const initial = new URLSearchParams(location.search).get('servicio');
  if (initial) {const tab=tabs.find(t=>t.dataset.servicio===initial);if(tab)select(tab);}
